@@ -1,6 +1,6 @@
 {
   "name": "foodapp-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "FoodApp SaaS Backend API",
   "scripts": {
     "build": "nest build",

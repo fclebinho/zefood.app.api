@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: zefood.app.api
+  IMAGE_NAME: ${{ github.event.repository.name }}
 
 jobs:
   build:
@@ -39,8 +39,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL}}
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME}}/${{env.IMAGE_NAME}}:${{ steps.get_version.outputs.VERSION }}
             ${{ secrets.DOCKER_HUB_USERNAME}}/${{env.IMAGE_NAME}}:latest

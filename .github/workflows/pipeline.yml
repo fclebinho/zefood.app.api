@@ -1,0 +1,46 @@
+name: Docker Build & Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+  # This workflow dispatch, allows us to execute this workflow manually
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: zefood.app.api
+
+jobs:
+  build:
+    name: Build Docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code 🛎️
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx 🚀
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub 🚢
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME}}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD}}
+
+      - name: Extract version from tag 📌
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build and push 🏗️
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL}}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME}}/${{env.IMAGE_NAME}}:${{ steps.get_version.outputs.VERSION }}
+            ${{ secrets.DOCKER_HUB_USERNAME}}/${{env.IMAGE_NAME}}:latest

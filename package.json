@@ -1,7 +1,7 @@
 {
-  "name": "foodapp-backend",
+  "name": "zefood-backend",
   "version": "1.0.1",
-  "description": "FoodApp SaaS Backend API",
+  "description": "ZeFood SaaS Backend API",
   "scripts": {
     "build": "nest build",
     "start": "nest start",

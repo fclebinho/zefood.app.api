@@ -23,8 +23,8 @@ export class UploadService {
     const endpoint = process.env.S3_ENDPOINT || 'http://localhost:9000';
     const accessKey = process.env.S3_ACCESS_KEY || 'minioadmin';
     const secretKey = process.env.S3_SECRET_KEY || 'minioadmin123';
-    this.bucket = process.env.S3_BUCKET || 'foodapp';
-    this.publicUrl = process.env.S3_PUBLIC_URL || 'http://localhost:9000/foodapp';
+    this.bucket = process.env.S3_BUCKET || 'zefood';
+    this.publicUrl = process.env.S3_PUBLIC_URL || 'http://localhost:9000/zefood';
 
     this.s3Client = new S3Client({
       endpoint,

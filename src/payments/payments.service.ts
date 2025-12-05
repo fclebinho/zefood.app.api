@@ -139,7 +139,7 @@ export class PaymentsService {
             installments: 1,
             payment_method_id: dto.method === PaymentMethod.CREDIT_CARD ? 'master' : 'debmaster',
             payer: {
-              email: order.customer?.user?.email || 'customer@foodapp.com',
+              email: order.customer?.user?.email || 'customer@zefood.com',
             },
             metadata: {
               order_id: order.id,
@@ -226,7 +226,7 @@ export class PaymentsService {
             description: `Pedido #${order.id.slice(0, 8)} - ${order.restaurant.name}`,
             payment_method_id: 'pix',
             payer: {
-              email: order.customer?.user?.email || 'customer@foodapp.com',
+              email: order.customer?.user?.email || 'customer@zefood.com',
             },
             metadata: {
               order_id: order.id,
@@ -296,7 +296,7 @@ export class PaymentsService {
   private async generateMockPixCode(order: any, amount: number): Promise<PixPaymentData> {
     // Generate a mock Pix code for development
     // In production, this would come from a real payment provider
-    const pixKey = this.configService.get<string>('PIX_KEY') || 'foodapp@pix.com';
+    const pixKey = this.configService.get<string>('PIX_KEY') || 'zefood@pix.com';
     const merchantName = order.restaurant.name.substring(0, 25);
     const city = order.restaurant.city.substring(0, 15);
     const txId = order.id.replace(/-/g, '').substring(0, 25);

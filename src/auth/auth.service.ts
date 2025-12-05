@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterRestaurantDto } from './dto/register-restaurant.dto';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
@@ -98,6 +99,88 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+    });
+  }
+
+  async registerRestaurant(registerDto: RegisterRestaurantDto) {
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new ConflictException('Email already registered');
+    }
+
+    const passwordHash = await bcrypt.hash(registerDto.password, 12);
+
+    // Create user and restaurant in a transaction
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // Create user
+      const user = await prisma.user.create({
+        data: {
+          email: registerDto.email,
+          passwordHash,
+          phone: registerDto.phone,
+          role: UserRole.RESTAURANT,
+        },
+      });
+
+      // Create restaurant
+      const slug = registerDto.restaurantName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]/g, '');
+
+      const restaurant = await prisma.restaurant.create({
+        data: {
+          name: registerDto.restaurantName,
+          description: registerDto.description,
+          slug,
+          street: 'A definir',
+          number: '0',
+          neighborhood: 'A definir',
+          city: 'A definir',
+          state: 'XX',
+          zipCode: '00000-000',
+          deliveryRadius: 5,
+          minOrderValue: 0,
+          deliveryFee: 5.0,
+          avgPrepTime: 30,
+          isOpen: false,
+        },
+      });
+
+      // Link user to restaurant
+      await prisma.restaurantUser.create({
+        data: {
+          userId: user.id,
+          restaurantId: restaurant.id,
+          role: 'OWNER',
+        },
+      });
+
+      // Link category if provided
+      if (registerDto.category) {
+        const category = await prisma.category.findFirst({
+          where: { slug: registerDto.category.toLowerCase() },
+        });
+
+        if (category) {
+          await prisma.restaurantCategory.create({
+            data: {
+              restaurantId: restaurant.id,
+              categoryId: category.id,
+            },
+          });
+        }
+      }
+
+      return user;
+    });
+
+    return this.login({
+      id: result.id,
+      email: result.email,
+      role: result.role,
     });
   }
 

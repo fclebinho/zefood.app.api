@@ -56,7 +56,7 @@ Crie um arquivo `.env` baseado no `.env.example`:
 
 ```env
 # Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/foodapp?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/zefood?schema=public"
 
 # JWT
 JWT_SECRET="your-super-secret-key-change-in-production"

@@ -185,7 +185,7 @@ const DEFAULT_SETTINGS = [
   // App Settings
   {
     key: 'app_name',
-    value: 'FoodApp',
+    value: 'ZeFood',
     type: 'STRING',
     category: 'general',
     label: 'Nome do App',
@@ -194,7 +194,7 @@ const DEFAULT_SETTINGS = [
   },
   {
     key: 'support_email',
-    value: 'suporte@foodapp.com',
+    value: 'suporte@zefood.com',
     type: 'STRING',
     category: 'general',
     label: 'Email de Suporte',

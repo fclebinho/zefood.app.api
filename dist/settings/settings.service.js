@@ -1,0 +1,382 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SettingsService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+const DEFAULT_SETTINGS = [
+    {
+        key: 'delivery_base_fee',
+        value: '5.00',
+        type: 'NUMBER',
+        category: 'delivery',
+        label: 'Taxa Base de Entrega',
+        description: 'Valor base cobrado por entrega (R$)',
+        isPublic: true,
+    },
+    {
+        key: 'delivery_fee_per_km',
+        value: '1.50',
+        type: 'NUMBER',
+        category: 'delivery',
+        label: 'Taxa por Km',
+        description: 'Valor adicional por quilometro (R$)',
+        isPublic: true,
+    },
+    {
+        key: 'delivery_min_fee',
+        value: '5.00',
+        type: 'NUMBER',
+        category: 'delivery',
+        label: 'Taxa Minima de Entrega',
+        description: 'Valor minimo de taxa de entrega (R$)',
+        isPublic: true,
+    },
+    {
+        key: 'delivery_max_fee',
+        value: '25.00',
+        type: 'NUMBER',
+        category: 'delivery',
+        label: 'Taxa Maxima de Entrega',
+        description: 'Valor maximo de taxa de entrega (R$)',
+        isPublic: true,
+    },
+    {
+        key: 'delivery_free_above',
+        value: '100.00',
+        type: 'NUMBER',
+        category: 'delivery',
+        label: 'Frete Gratis Acima de',
+        description: 'Pedidos acima deste valor tem frete gratis (0 = desabilitado)',
+        isPublic: true,
+    },
+    {
+        key: 'delivery_max_radius_km',
+        value: '15',
+        type: 'NUMBER',
+        category: 'delivery',
+        label: 'Raio Maximo de Entrega (km)',
+        description: 'Distancia maxima para entregas',
+        isPublic: true,
+    },
+    {
+        key: 'platform_fee_percentage',
+        value: '15',
+        type: 'NUMBER',
+        category: 'fees',
+        label: 'Taxa da Plataforma (%)',
+        description: 'Percentual cobrado dos restaurantes por pedido',
+        isPublic: false,
+    },
+    {
+        key: 'driver_commission_percentage',
+        value: '80',
+        type: 'NUMBER',
+        category: 'fees',
+        label: 'Comissao do Entregador (%)',
+        description: 'Percentual da taxa de entrega que vai para o entregador',
+        isPublic: false,
+    },
+    {
+        key: 'payment_gateway',
+        value: 'stripe',
+        type: 'STRING',
+        category: 'payment',
+        label: 'Gateway de Pagamento',
+        description: 'Gateway de pagamento ativo (stripe, mercadopago, pagseguro)',
+        isPublic: false,
+    },
+    {
+        key: 'stripe_public_key',
+        value: '',
+        type: 'STRING',
+        category: 'payment',
+        label: 'Stripe Public Key',
+        description: 'Chave publica do Stripe',
+        isPublic: true,
+    },
+    {
+        key: 'stripe_secret_key',
+        value: '',
+        type: 'STRING',
+        category: 'payment',
+        label: 'Stripe Secret Key',
+        description: 'Chave secreta do Stripe',
+        isPublic: false,
+    },
+    {
+        key: 'mercadopago_public_key',
+        value: '',
+        type: 'STRING',
+        category: 'payment',
+        label: 'Mercado Pago Public Key',
+        description: 'Chave publica do Mercado Pago',
+        isPublic: true,
+    },
+    {
+        key: 'mercadopago_access_token',
+        value: '',
+        type: 'STRING',
+        category: 'payment',
+        label: 'Mercado Pago Access Token',
+        description: 'Token de acesso do Mercado Pago',
+        isPublic: false,
+    },
+    {
+        key: 'pix_enabled',
+        value: 'true',
+        type: 'BOOLEAN',
+        category: 'payment',
+        label: 'PIX Habilitado',
+        description: 'Permite pagamento via PIX',
+        isPublic: true,
+    },
+    {
+        key: 'cash_enabled',
+        value: 'true',
+        type: 'BOOLEAN',
+        category: 'payment',
+        label: 'Dinheiro Habilitado',
+        description: 'Permite pagamento em dinheiro na entrega',
+        isPublic: true,
+    },
+    {
+        key: 'card_enabled',
+        value: 'true',
+        type: 'BOOLEAN',
+        category: 'payment',
+        label: 'Cartao Habilitado',
+        description: 'Permite pagamento com cartao de credito/debito',
+        isPublic: true,
+    },
+    {
+        key: 'order_min_value',
+        value: '15.00',
+        type: 'NUMBER',
+        category: 'orders',
+        label: 'Valor Minimo do Pedido',
+        description: 'Valor minimo para realizar um pedido (R$)',
+        isPublic: true,
+    },
+    {
+        key: 'order_auto_cancel_minutes',
+        value: '30',
+        type: 'NUMBER',
+        category: 'orders',
+        label: 'Cancelamento Automatico (min)',
+        description: 'Tempo para cancelar pedido nao aceito pelo restaurante',
+        isPublic: false,
+    },
+    {
+        key: 'estimated_delivery_minutes',
+        value: '45',
+        type: 'NUMBER',
+        category: 'orders',
+        label: 'Tempo Estimado de Entrega (min)',
+        description: 'Tempo padrao estimado para entrega',
+        isPublic: true,
+    },
+    {
+        key: 'app_name',
+        value: 'FoodApp',
+        type: 'STRING',
+        category: 'general',
+        label: 'Nome do App',
+        description: 'Nome exibido no aplicativo',
+        isPublic: true,
+    },
+    {
+        key: 'support_email',
+        value: 'suporte@foodapp.com',
+        type: 'STRING',
+        category: 'general',
+        label: 'Email de Suporte',
+        description: 'Email para contato de suporte',
+        isPublic: true,
+    },
+    {
+        key: 'support_phone',
+        value: '',
+        type: 'STRING',
+        category: 'general',
+        label: 'Telefone de Suporte',
+        description: 'Telefone para contato de suporte',
+        isPublic: true,
+    },
+    {
+        key: 'maintenance_mode',
+        value: 'false',
+        type: 'BOOLEAN',
+        category: 'general',
+        label: 'Modo Manutencao',
+        description: 'Coloca o app em modo de manutencao',
+        isPublic: true,
+    },
+];
+let SettingsService = class SettingsService {
+    constructor(prisma) {
+        this.prisma = prisma;
+        this.cache = new Map();
+    }
+    async onModuleInit() {
+        await this.seedDefaultSettings();
+        await this.loadCache();
+    }
+    async seedDefaultSettings() {
+        for (const setting of DEFAULT_SETTINGS) {
+            await this.prisma.setting.upsert({
+                where: { key: setting.key },
+                update: {},
+                create: setting,
+            });
+        }
+    }
+    async loadCache() {
+        const settings = await this.prisma.setting.findMany();
+        for (const setting of settings) {
+            this.cache.set(setting.key, this.parseValue(setting.value, setting.type));
+        }
+    }
+    parseValue(value, type) {
+        switch (type) {
+            case 'NUMBER':
+                return parseFloat(value);
+            case 'BOOLEAN':
+                return value === 'true';
+            case 'JSON':
+                try {
+                    return JSON.parse(value);
+                }
+                catch {
+                    return value;
+                }
+            default:
+                return value;
+        }
+    }
+    stringifyValue(value) {
+        if (typeof value === 'object') {
+            return JSON.stringify(value);
+        }
+        return String(value);
+    }
+    async get(key) {
+        if (this.cache.has(key)) {
+            return this.cache.get(key);
+        }
+        const setting = await this.prisma.setting.findUnique({
+            where: { key },
+        });
+        if (!setting)
+            return null;
+        const value = this.parseValue(setting.value, setting.type);
+        this.cache.set(key, value);
+        return value;
+    }
+    async getByCategory(category) {
+        const settings = await this.prisma.setting.findMany({
+            where: { category },
+            orderBy: { key: 'asc' },
+        });
+        return settings.map((s) => ({
+            ...s,
+            parsedValue: this.parseValue(s.value, s.type),
+        }));
+    }
+    async getAll() {
+        const settings = await this.prisma.setting.findMany({
+            orderBy: [{ category: 'asc' }, { key: 'asc' }],
+        });
+        return settings.map((s) => ({
+            ...s,
+            parsedValue: this.parseValue(s.value, s.type),
+        }));
+    }
+    async getPublicSettings() {
+        const settings = await this.prisma.setting.findMany({
+            where: { isPublic: true },
+            orderBy: { key: 'asc' },
+        });
+        const result = {};
+        for (const setting of settings) {
+            result[setting.key] = this.parseValue(setting.value, setting.type);
+        }
+        return result;
+    }
+    async update(key, value) {
+        const setting = await this.prisma.setting.findUnique({
+            where: { key },
+        });
+        if (!setting) {
+            throw new Error(`Setting ${key} not found`);
+        }
+        const stringValue = this.stringifyValue(value);
+        const updated = await this.prisma.setting.update({
+            where: { key },
+            data: { value: stringValue },
+        });
+        this.cache.set(key, this.parseValue(stringValue, setting.type));
+        return {
+            ...updated,
+            parsedValue: this.parseValue(updated.value, updated.type),
+        };
+    }
+    async updateMany(settings) {
+        const results = [];
+        for (const [key, value] of Object.entries(settings)) {
+            try {
+                const result = await this.update(key, value);
+                results.push(result);
+            }
+            catch (error) {
+                console.error(`Failed to update setting ${key}:`, error);
+            }
+        }
+        return results;
+    }
+    async calculateDeliveryFee(distanceKm, orderTotal) {
+        const baseFee = await this.get('delivery_base_fee') || 5;
+        const feePerKm = await this.get('delivery_fee_per_km') || 1.5;
+        const minFee = await this.get('delivery_min_fee') || 5;
+        const maxFee = await this.get('delivery_max_fee') || 25;
+        const freeAbove = await this.get('delivery_free_above') || 0;
+        if (freeAbove > 0 && orderTotal >= freeAbove) {
+            return 0;
+        }
+        let fee = baseFee + (distanceKm * feePerKm);
+        fee = Math.max(fee, minFee);
+        fee = Math.min(fee, maxFee);
+        return Math.round(fee * 100) / 100;
+    }
+    async getCategories() {
+        const settings = await this.prisma.setting.findMany({
+            select: { category: true },
+            distinct: ['category'],
+        });
+        const categoryLabels = {
+            delivery: 'Entrega',
+            fees: 'Taxas',
+            payment: 'Pagamento',
+            orders: 'Pedidos',
+            general: 'Geral',
+        };
+        return settings.map((s) => ({
+            key: s.category,
+            label: categoryLabels[s.category] || s.category,
+        }));
+    }
+};
+exports.SettingsService = SettingsService;
+exports.SettingsService = SettingsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+], SettingsService);
+//# sourceMappingURL=settings.service.js.map

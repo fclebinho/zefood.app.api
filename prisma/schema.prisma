@@ -1,0 +1,668 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS ====================
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String     @map("password_hash")
+  phone         String?
+  role          UserRole
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean    @default(false) @map("email_verified")
+  phoneVerified Boolean    @default(false) @map("phone_verified")
+  avatarUrl     String?    @map("avatar_url")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  customer        Customer?
+  driver          Driver?
+  addresses       Address[]
+  restaurantUsers RestaurantUser[]
+  notifications   Notification[]
+  refreshTokens   RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+enum UserRole {
+  CUSTOMER
+  RESTAURANT
+  DRIVER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  userId    String    @unique @map("user_id")
+  fullName  String    @map("full_name")
+  cpf       String?   @unique
+  birthDate DateTime? @map("birth_date")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  ratings      Rating[]
+  favorites    Favorite[]
+  couponUsages CouponUsage[]
+
+  @@map("customers")
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  label        String?
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String   @db.VarChar(2)
+  zipCode      String   @map("zip_code")
+  latitude     Decimal? @db.Decimal(10, 8)
+  longitude    Decimal? @db.Decimal(11, 8)
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+// ==================== RESTAURANTS ====================
+
+model Restaurant {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+  cnpj        String? @unique
+  logoUrl     String? @map("logo_url")
+  coverUrl    String? @map("cover_url")
+  phone       String?
+  email       String?
+
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String   @db.VarChar(2)
+  zipCode      String   @map("zip_code")
+  latitude     Decimal? @db.Decimal(10, 8)
+  longitude    Decimal? @db.Decimal(11, 8)
+
+  status         RestaurantStatus @default(PENDING)
+  isOpen         Boolean          @default(false) @map("is_open")
+  rating         Decimal          @default(0) @db.Decimal(2, 1)
+  ratingCount    Int              @default(0) @map("rating_count")
+  minOrderValue  Decimal          @default(0) @map("min_order_value") @db.Decimal(10, 2)
+  deliveryFee    Decimal          @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  deliveryRadius Int              @default(5) @map("delivery_radius")
+  avgPrepTime    Int              @default(30) @map("avg_prep_time")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users          RestaurantUser[]
+  categories     RestaurantCategory[]
+  hours          RestaurantHour[]
+  menuCategories MenuCategory[]
+  orders         Order[]
+  favorites      Favorite[]
+  coupons        Coupon[]
+
+  @@map("restaurants")
+}
+
+enum RestaurantStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model RestaurantUser {
+  id           String         @id @default(uuid())
+  restaurantId String         @map("restaurant_id")
+  userId       String         @map("user_id")
+  role         RestaurantRole @default(OWNER)
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, userId])
+  @@map("restaurant_users")
+}
+
+enum RestaurantRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  icon      String?
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  restaurants RestaurantCategory[]
+
+  @@map("categories")
+}
+
+model RestaurantCategory {
+  restaurantId String @map("restaurant_id")
+  categoryId   String @map("category_id")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([restaurantId, categoryId])
+  @@map("restaurant_categories")
+}
+
+model RestaurantHour {
+  id           String    @id @default(uuid())
+  restaurantId String    @map("restaurant_id")
+  dayOfWeek    Int       @map("day_of_week")
+  openTime     DateTime? @map("open_time") @db.Time
+  closeTime    DateTime? @map("close_time") @db.Time
+  isClosed     Boolean   @default(false) @map("is_closed")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, dayOfWeek])
+  @@map("restaurant_hours")
+}
+
+// ==================== MENU ====================
+
+model MenuCategory {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  name         String
+  description  String?
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items      MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  categoryId  String   @map("category_id")
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  isAvailable Boolean  @default(true) @map("is_available")
+  sortOrder   Int      @default(0) @map("sort_order")
+  prepTime    Int?     @map("prep_time")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  options    ItemOption[]
+  orderItems OrderItem[]
+
+  @@map("menu_items")
+}
+
+model ItemOption {
+  id            String   @id @default(uuid())
+  itemId        String   @map("item_id")
+  name          String
+  isRequired    Boolean  @default(false) @map("is_required")
+  minSelections Int      @default(0) @map("min_selections")
+  maxSelections Int      @default(1) @map("max_selections")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  item   MenuItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  values OptionValue[]
+
+  @@map("item_options")
+}
+
+model OptionValue {
+  id          String   @id @default(uuid())
+  optionId    String   @map("option_id")
+  name        String
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  isAvailable Boolean  @default(true) @map("is_available")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  option ItemOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@map("option_values")
+}
+
+// ==================== ORDERS ====================
+
+model Order {
+  id           String  @id @default(uuid())
+  orderNumber  Int     @default(autoincrement()) @map("order_number")
+  customerId   String  @map("customer_id")
+  restaurantId String  @map("restaurant_id")
+  driverId     String? @map("driver_id")
+
+  deliveryAddress Json @map("delivery_address")
+
+  status OrderStatus @default(PENDING)
+
+  subtotal    Decimal @db.Decimal(10, 2)
+  deliveryFee Decimal @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  discount    Decimal @default(0) @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  paymentMethod PaymentMethod @map("payment_method")
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  paymentId     String?       @map("payment_id")
+
+  pickupCode   String? @map("pickup_code")
+  deliveryCode String? @map("delivery_code")
+
+  notes        String?
+  cancelReason String? @map("cancel_reason")
+
+  couponId       String?  @map("coupon_id")
+  couponDiscount Decimal  @default(0) @map("coupon_discount") @db.Decimal(10, 2)
+
+  estimatedPrepAt     DateTime? @map("estimated_prep_at")
+  estimatedDeliveryAt DateTime? @map("estimated_delivery_at")
+  acceptedAt          DateTime? @map("accepted_at")
+  readyAt             DateTime? @map("ready_at")
+  pickedUpAt          DateTime? @map("picked_up_at")
+  deliveredAt         DateTime? @map("delivered_at")
+  cancelledAt         DateTime? @map("cancelled_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  customer      Customer             @relation(fields: [customerId], references: [id])
+  restaurant    Restaurant           @relation(fields: [restaurantId], references: [id])
+  driver        Driver?              @relation(fields: [driverId], references: [id])
+  coupon        Coupon?              @relation(fields: [couponId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  rating        Rating?
+  driverEarning DriverEarning?
+  couponUsage   CouponUsage?
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  ACCEPTED
+  PREPARING
+  READY
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String   @map("order_id")
+  menuItemId String   @map("menu_item_id")
+  name       String
+  quantity   Int      @default(1)
+  unitPrice  Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice Decimal  @map("total_price") @db.Decimal(10, 2)
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  order    Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem          @relation(fields: [menuItemId], references: [id])
+  options  OrderItemOption[]
+
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id          String   @id @default(uuid())
+  orderItemId String   @map("order_item_id")
+  optionName  String   @map("option_name")
+  valueName   String   @map("value_name")
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@map("order_item_options")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String      @map("order_id")
+  status    OrderStatus
+  notes     String?
+  createdBy String?     @map("created_by")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_status_history")
+}
+
+// ==================== DRIVERS ====================
+
+model Driver {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  fullName  String   @map("full_name")
+  cpf       String   @unique
+  birthDate DateTime @map("birth_date")
+
+  vehicleType  VehicleType @map("vehicle_type")
+  vehiclePlate String?     @map("vehicle_plate")
+  vehicleModel String?     @map("vehicle_model")
+  vehicleColor String?     @map("vehicle_color")
+
+  status   DriverStatus @default(PENDING)
+  isOnline Boolean      @default(false) @map("is_online")
+
+  currentLat     Decimal?  @map("current_lat") @db.Decimal(10, 8)
+  currentLng     Decimal?  @map("current_lng") @db.Decimal(11, 8)
+  lastLocationAt DateTime? @map("last_location_at")
+
+  rating          Decimal @default(0) @db.Decimal(2, 1)
+  ratingCount     Int     @default(0) @map("rating_count")
+  totalDeliveries Int     @default(0) @map("total_deliveries")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents DriverDocument[]
+  locations DriverLocation[]
+  earnings  DriverEarning[]
+  payouts   Payout[]
+  orders    Order[]
+
+  @@map("drivers")
+}
+
+enum VehicleType {
+  MOTORCYCLE
+  BICYCLE
+  CAR
+}
+
+enum DriverStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model DriverDocument {
+  id              String         @id @default(uuid())
+  driverId        String         @map("driver_id")
+  type            DocumentType
+  fileUrl         String         @map("file_url")
+  status          DocumentStatus @default(PENDING)
+  rejectionReason String?        @map("rejection_reason")
+  verifiedAt      DateTime?      @map("verified_at")
+  verifiedBy      String?        @map("verified_by")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_documents")
+}
+
+enum DocumentType {
+  CNH_FRONT
+  CNH_BACK
+  VEHICLE_DOC
+  PHOTO
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model DriverLocation {
+  id         String   @id @default(uuid())
+  driverId   String   @map("driver_id")
+  latitude   Decimal  @db.Decimal(10, 8)
+  longitude  Decimal  @db.Decimal(11, 8)
+  accuracy   Decimal? @db.Decimal(6, 2)
+  speed      Decimal? @db.Decimal(6, 2)
+  heading    Decimal? @db.Decimal(5, 2)
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_locations")
+}
+
+model DriverEarning {
+  id          String      @id @default(uuid())
+  driverId    String      @map("driver_id")
+  orderId     String?     @unique @map("order_id")
+  amount      Decimal     @db.Decimal(10, 2)
+  type        EarningType
+  description String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [id])
+
+  @@map("driver_earnings")
+}
+
+enum EarningType {
+  DELIVERY
+  BONUS
+  TIP
+  ADJUSTMENT
+}
+
+model Payout {
+  id            String       @id @default(uuid())
+  driverId      String       @map("driver_id")
+  amount        Decimal      @db.Decimal(10, 2)
+  status        PayoutStatus @default(PENDING)
+  transactionId String?      @map("transaction_id")
+  paidAt        DateTime?    @map("paid_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  driver Driver @relation(fields: [driverId], references: [id])
+
+  @@map("payouts")
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ==================== RATINGS ====================
+
+model Rating {
+  id                String   @id @default(uuid())
+  orderId           String   @unique @map("order_id")
+  customerId        String   @map("customer_id")
+  restaurantRating  Int?     @map("restaurant_rating")
+  driverRating      Int?     @map("driver_rating")
+  restaurantComment String?  @map("restaurant_comment")
+  driverComment     String?  @map("driver_comment")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("ratings")
+}
+
+// ==================== COUPONS ====================
+
+model Coupon {
+  id              String     @id @default(uuid())
+  code            String     @unique
+  description     String?
+  type            CouponType
+  value           Decimal    @db.Decimal(10, 2)
+  minOrderValue   Decimal    @default(0) @map("min_order_value") @db.Decimal(10, 2)
+  maxDiscount     Decimal?   @map("max_discount") @db.Decimal(10, 2)
+  maxUses         Int?       @map("max_uses")
+  maxUsesPerUser  Int        @default(1) @map("max_uses_per_user")
+  usedCount       Int        @default(0) @map("used_count")
+  restaurantId    String?    @map("restaurant_id")
+  firstOrderOnly  Boolean    @default(false) @map("first_order_only")
+  startsAt        DateTime   @map("starts_at")
+  expiresAt       DateTime?  @map("expires_at")
+  isActive        Boolean    @default(true) @map("is_active")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  restaurant Restaurant?   @relation(fields: [restaurantId], references: [id])
+  orders     Order[]
+  usages     CouponUsage[]
+
+  @@map("coupons")
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+  FREE_DELIVERY
+}
+
+model CouponUsage {
+  id              String   @id @default(uuid())
+  couponId        String   @map("coupon_id")
+  customerId      String   @map("customer_id")
+  orderId         String   @unique @map("order_id")
+  discountApplied Decimal  @map("discount_applied") @db.Decimal(10, 2)
+  usedAt          DateTime @default(now()) @map("used_at")
+
+  coupon   Coupon   @relation(fields: [couponId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+
+  @@map("coupon_usages")
+}
+
+// ==================== FAVORITES ====================
+
+model Favorite {
+  id           String   @id @default(uuid())
+  customerId   String   @map("customer_id")
+  restaurantId String   @map("restaurant_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, restaurantId])
+  @@map("favorites")
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  body      String?
+  data      Json?
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ==================== SETTINGS ====================
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  type      SettingType @default(STRING)
+  category  String   @default("general")
+  label     String?
+  description String?
+  isPublic  Boolean  @default(false) @map("is_public")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}

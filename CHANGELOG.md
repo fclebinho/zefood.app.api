@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.5](https://github.com/fclebinho/zefood.app/compare/v1.1.4...v1.1.5) (2025-12-06)
+
+
+### Bug Fixes
+
+* remove global prefix /api from routes ([5f05ec3](https://github.com/fclebinho/zefood.app/commit/5f05ec3e72613844304959150cb37453808a93c2))
+
 ### [1.1.4](https://github.com/fclebinho/zefood.app/compare/v1.1.3...v1.1.4) (2025-12-06)
 
 

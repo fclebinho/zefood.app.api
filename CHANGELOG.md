@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.7](https://github.com/fclebinho/zefood.app/compare/v1.1.6...v1.1.7) (2025-12-06)
+
+### [1.1.5](https://github.com/fclebinho/zefood.app/compare/v1.1.4...v1.1.5) (2025-12-06)
+
+
+### Bug Fixes
+
+* remove global prefix /api from routes ([5f05ec3](https://github.com/fclebinho/zefood.app/commit/5f05ec3e72613844304959150cb37453808a93c2))
+
+### [1.1.4](https://github.com/fclebinho/zefood.app/compare/v1.1.3...v1.1.4) (2025-12-06)
+
+
+### Bug Fixes
+
+* correct swagger docs path to /api/docs ([69e7763](https://github.com/fclebinho/zefood.app/commit/69e77635a3abaa45a6d3641983a04de155bb06b7))
+
+### [1.1.3](https://github.com/fclebinho/zefood.app/compare/v1.1.1...v1.1.3) (2025-12-06)
+
+
+### Bug Fixes
+
+* update package-lock.json with swagger dependencies ([4e54c37](https://github.com/fclebinho/zefood.app/commit/4e54c37a8c73e7cfd1838de581e67db44482f54f))
+
+### [1.1.1](https://github.com/fclebinho/zefood.app/compare/v1.1.0...v1.1.1) (2025-12-06)
+
 ### [1.1.6](https://github.com/fclebinho/zefood.app/compare/v1.1.0...v1.1.6) (2025-12-06)
 
 

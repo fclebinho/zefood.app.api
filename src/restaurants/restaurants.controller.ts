@@ -9,6 +9,7 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RestaurantsService } from './restaurants.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -18,6 +19,7 @@ import { CreateMenuItemDto, UpdateMenuItemDto } from './dto/menu-item.dto';
 import { CreateMenuCategoryDto, UpdateMenuCategoryDto } from './dto/menu-category.dto';
 import { UpdateRestaurantSettingsDto } from './dto/restaurant-settings.dto';
 
+@ApiTags('restaurants')
 @Controller('restaurants')
 export class RestaurantsController {
   constructor(private readonly restaurantsService: RestaurantsService) {}

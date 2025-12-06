@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TrackingService } from './tracking.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -20,6 +21,8 @@ class UpdateLocationDto {
   heading?: number;
 }
 
+@ApiTags('tracking')
+@ApiBearerAuth()
 @Controller('tracking')
 @UseGuards(JwtAuthGuard)
 export class TrackingController {

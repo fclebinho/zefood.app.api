@@ -10,6 +10,7 @@ import {
   RawBodyRequest,
   Req,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaymentsService, CreatePaymentDto } from './payments.service';
 import { PaymentMethod } from '@prisma/client';
@@ -20,6 +21,7 @@ class ProcessPaymentDto {
   cardToken?: string;
 }
 
+@ApiTags('payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}

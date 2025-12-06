@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { DriversService } from './drivers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -16,6 +17,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
 import { UpdateLocationDto } from './dto/update-location.dto';
 
+@ApiTags('drivers')
+@ApiBearerAuth()
 @Controller('drivers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.DRIVER)

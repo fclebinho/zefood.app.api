@@ -9,6 +9,7 @@ import {
   FileTypeValidator,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,6 +18,8 @@ import { UploadService } from './upload.service';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+@ApiTags('upload')
+@ApiBearerAuth()
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 export class UploadController {

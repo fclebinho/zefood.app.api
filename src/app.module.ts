@@ -12,6 +12,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { AdminModule } from './admin/admin.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { SettingsModule } from './settings/settings.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SettingsModule } from './settings/settings.module';
       isGlobal: true,
     }),
     PrismaModule,
+    HealthModule,
     AuthModule,
     UsersModule,
     RestaurantsModule,

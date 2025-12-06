@@ -13,12 +13,21 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   async connectToRedis(): Promise<void> {
+    // Support both REDIS_URL and REDIS_HOST/REDIS_PORT
+    const redisUrl = process.env.REDIS_URL;
     const redisHost = process.env.REDIS_HOST || 'redis';
     const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
 
-    this.logger.log(`Connecting to Redis at ${redisHost}:${redisPort}`);
+    let pubClient: Redis;
 
-    const pubClient = new Redis({ host: redisHost, port: redisPort });
+    if (redisUrl) {
+      this.logger.log(`Connecting to Redis at ${redisUrl}`);
+      pubClient = new Redis(redisUrl);
+    } else {
+      this.logger.log(`Connecting to Redis at ${redisHost}:${redisPort}`);
+      pubClient = new Redis({ host: redisHost, port: redisPort });
+    }
+
     const subClient = pubClient.duplicate();
 
     pubClient.on('error', (err) => {

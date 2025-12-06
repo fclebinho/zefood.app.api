@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/fclebinho/zefood.app/compare/v1.1.9...v1.2.0) (2025-12-06)
+
+
+### Features
+
+* add Redis adapter for Socket.IO multi-replica support ([96e93b5](https://github.com/fclebinho/zefood.app/commit/96e93b55ee641e1f6ab6a344d9d977bf99d53dc4))
+
+
+### Bug Fixes
+
+* configure Socket.IO adapter and update CORS for WebSocket ([24e70a7](https://github.com/fclebinho/zefood.app/commit/24e70a7e6f83aea83b34d303cff0ab34ec0f2d02))
+
 ### [1.1.9](https://github.com/fclebinho/zefood.app/compare/v1.1.8...v1.1.9) (2025-12-06)
 
 ### [1.1.8](https://github.com/fclebinho/zefood.app/compare/v1.1.7...v1.1.8) (2025-12-06)

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.4](https://github.com/fclebinho/zefood.app/compare/v1.1.3...v1.1.4) (2025-12-06)
+
+
+### Bug Fixes
+
+* correct swagger docs path to /api/docs ([69e7763](https://github.com/fclebinho/zefood.app/commit/69e77635a3abaa45a6d3641983a04de155bb06b7))
+
 ### [1.1.3](https://github.com/fclebinho/zefood.app/compare/v1.1.2...v1.1.3) (2025-12-06)
 
 

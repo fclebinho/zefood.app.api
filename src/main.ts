@@ -1,14 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { IoAdapter } from '@nestjs/platform-socket.io';
+import { RedisIoAdapter } from './websocket/redis-io.adapter';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Configure Socket.IO adapter
-  app.useWebSocketAdapter(new IoAdapter(app));
+  // Configure Socket.IO adapter with Redis for multi-replica support
+  const redisIoAdapter = new RedisIoAdapter(app);
+  try {
+    await redisIoAdapter.connectToRedis();
+    app.useWebSocketAdapter(redisIoAdapter);
+    logger.log('Using Redis adapter for Socket.IO');
+  } catch (error) {
+    logger.warn(`Failed to connect to Redis: ${error.message}. Using default adapter.`);
+    // Fallback to default adapter if Redis is not available
+    const { IoAdapter } = await import('@nestjs/platform-socket.io');
+    app.useWebSocketAdapter(new IoAdapter(app));
+  }
 
   app.enableCors({
     origin: [

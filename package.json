@@ -1,6 +1,6 @@
 {
   "name": "zefood-backend",
-  "version": "1.1.1",
+  "version": "1.1.6",
   "description": "ZeFood SaaS Backend API",
   "scripts": {
     "build": "nest build",

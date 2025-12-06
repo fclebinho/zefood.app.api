@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.6](https://github.com/fclebinho/zefood.app/compare/v1.1.0...v1.1.6) (2025-12-06)
+
+
+### Bug Fixes
+
+* correct health endpoint path ([2d1b14e](https://github.com/fclebinho/zefood.app/commit/2d1b14e8b10f45979e9e913feec1f644c29aa555))
+
 ### [1.1.1](https://github.com/fclebinho/zefood.app/compare/v1.1.0...v1.1.1) (2025-12-06)
 
 

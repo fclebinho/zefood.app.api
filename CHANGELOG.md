@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.3](https://github.com/fclebinho/zefood.app/compare/v1.1.2...v1.1.3) (2025-12-06)
+
+
+### Bug Fixes
+
+* update package-lock.json with swagger dependencies ([4e54c37](https://github.com/fclebinho/zefood.app/commit/4e54c37a8c73e7cfd1838de581e67db44482f54f))
+
 ### [1.1.2](https://github.com/fclebinho/zefood.app/compare/v1.1.1...v1.1.2) (2025-12-06)
 
 ### [1.1.1](https://github.com/fclebinho/zefood.app/compare/v1.1.0...v1.1.1) (2025-12-06)

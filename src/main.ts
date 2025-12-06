@@ -24,8 +24,6 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api');
-
   const config = new DocumentBuilder()
     .setTitle('ZeFood API')
     .setDescription('API para o sistema de delivery ZeFood')

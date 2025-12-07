@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RestaurantStatus } from '@prisma/client';
+import { RestaurantStatus, OrderStatus } from '@prisma/client';
 import { CreateMenuItemDto, UpdateMenuItemDto } from './dto/menu-item.dto';
 import { CreateMenuCategoryDto, UpdateMenuCategoryDto } from './dto/menu-category.dto';
 import { UpdateRestaurantSettingsDto } from './dto/restaurant-settings.dto';
@@ -519,5 +519,172 @@ export class RestaurantsService {
     });
 
     return { success: true };
+  }
+
+  // ==================== REPORTS ====================
+
+  async getReports(userId: string, period: string) {
+    const restaurantId = await this.getRestaurantIdByUserId(userId);
+
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'today':
+        startDate = new Date(now.setHours(0, 0, 0, 0));
+        break;
+      case 'week':
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case 'year':
+        startDate = new Date(now);
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        startDate = new Date(now.setHours(0, 0, 0, 0));
+        startDate.setDate(startDate.getDate() - 7);
+    }
+
+    // Get current period stats
+    const [totalRevenue, totalOrders, uniqueCustomers] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          restaurantId,
+          createdAt: { gte: startDate },
+          status: { notIn: [OrderStatus.CANCELLED] },
+        },
+        _sum: { total: true },
+      }),
+      this.prisma.order.count({
+        where: {
+          restaurantId,
+          createdAt: { gte: startDate },
+          status: { notIn: [OrderStatus.CANCELLED] },
+        },
+      }),
+      this.prisma.order.findMany({
+        where: {
+          restaurantId,
+          createdAt: { gte: startDate },
+          status: { notIn: [OrderStatus.CANCELLED] },
+        },
+        select: { customerId: true },
+        distinct: ['customerId'],
+      }),
+    ]);
+
+    const revenue = Number(totalRevenue._sum?.total) || 0;
+    const avgTicket = totalOrders > 0 ? revenue / totalOrders : 0;
+
+    // Get top products
+    const topProducts = await this.prisma.orderItem.groupBy({
+      by: ['menuItemId'],
+      where: {
+        order: {
+          restaurantId,
+          createdAt: { gte: startDate },
+          status: { notIn: [OrderStatus.CANCELLED] },
+        },
+      },
+      _sum: { quantity: true, subtotal: true },
+      orderBy: { _sum: { subtotal: 'desc' } },
+      take: 5,
+    });
+
+    // Get menu item names
+    const menuItemIds = topProducts.map((p) => p.menuItemId);
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: { id: { in: menuItemIds } },
+      select: { id: true, name: true },
+    });
+
+    const menuItemMap = new Map(menuItems.map((m) => [m.id, m.name]));
+    const totalProductRevenue = topProducts.reduce(
+      (sum, p) => sum + (Number(p._sum.subtotal) || 0),
+      0,
+    );
+
+    const formattedTopProducts = topProducts.map((p) => ({
+      name: menuItemMap.get(p.menuItemId) || 'Produto Desconhecido',
+      quantity: p._sum.quantity || 0,
+      revenue: Number(p._sum.subtotal) || 0,
+      percent:
+        totalProductRevenue > 0
+          ? Math.round(((Number(p._sum.subtotal) || 0) / totalProductRevenue) * 100)
+          : 0,
+    }));
+
+    // Get revenue by day (last 7 days)
+    const revenueByDay = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayStart = new Date(date.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+
+      const dayRevenue = await this.prisma.order.aggregate({
+        where: {
+          restaurantId,
+          createdAt: { gte: dayStart, lte: dayEnd },
+          status: { notIn: [OrderStatus.CANCELLED] },
+        },
+        _sum: { total: true },
+        _count: true,
+      });
+
+      revenueByDay.push({
+        date: dayStart.toISOString().split('T')[0],
+        dayOfWeek: dayStart.toLocaleDateString('pt-BR', { weekday: 'short' }),
+        revenue: Number(dayRevenue._sum?.total) || 0,
+        orders: dayRevenue._count,
+      });
+    }
+
+    // Get orders by hour (for today)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const ordersByHour = await this.prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        restaurantId,
+        createdAt: { gte: todayStart },
+        status: { notIn: [OrderStatus.CANCELLED] },
+      },
+      _count: true,
+    });
+
+    // Aggregate by hour
+    const hourlyData: { [key: number]: number } = {};
+    for (let i = 0; i < 24; i++) {
+      hourlyData[i] = 0;
+    }
+    ordersByHour.forEach((o) => {
+      const hour = new Date(o.createdAt).getHours();
+      hourlyData[hour] += o._count;
+    });
+
+    const formattedOrdersByHour = Object.entries(hourlyData).map(([hour, count]) => ({
+      hour: `${hour.padStart(2, '0')}:00`,
+      orders: count,
+    }));
+
+    return {
+      stats: {
+        totalRevenue: revenue,
+        totalOrders,
+        avgTicket,
+        uniqueCustomers: uniqueCustomers.length,
+      },
+      topProducts: formattedTopProducts,
+      revenueByDay,
+      ordersByHour: formattedOrdersByHour,
+    };
   }
 }

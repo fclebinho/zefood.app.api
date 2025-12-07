@@ -84,6 +84,19 @@ export class RestaurantsController {
     return this.restaurantsService.toggleOnlineStatus(userId);
   }
 
+  // ==================== REPORTS ====================
+
+  @Get('my/reports')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('RESTAURANT')
+  @ApiOperation({ summary: 'Get restaurant reports and statistics' })
+  async getReports(
+    @CurrentUser('sub') userId: string,
+    @Query('period') period?: string,
+  ) {
+    return this.restaurantsService.getReports(userId, period || 'week');
+  }
+
   // ==================== ORDERS MANAGEMENT ====================
 
   @Get('my/orders')

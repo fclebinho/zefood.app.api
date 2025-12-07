@@ -143,12 +143,13 @@ export class AuthService {
           name: registerDto.restaurantName,
           description: registerDto.description,
           slug,
-          street: 'A definir',
-          number: '0',
-          neighborhood: 'A definir',
-          city: 'A definir',
-          state: 'XX',
-          zipCode: '00000-000',
+          street: registerDto.street,
+          number: registerDto.number,
+          complement: registerDto.complement,
+          neighborhood: registerDto.neighborhood,
+          city: registerDto.city,
+          state: registerDto.state,
+          zipCode: registerDto.zipCode,
           deliveryRadius: 5,
           minOrderValue: 0,
           deliveryFee: 5.0,
@@ -182,13 +183,19 @@ export class AuthService {
         }
       }
 
-      return user;
+      return { user, restaurant };
     });
 
+    // Geocode restaurant address asynchronously
+    this.geocodingService.geocodeRestaurantAsync(
+      result.restaurant.id,
+      registerDto.zipCode,
+    );
+
     return this.login({
-      id: result.id,
-      email: result.email,
-      role: result.role,
+      id: result.user.id,
+      email: result.user.email,
+      role: result.user.role,
     });
   }
 

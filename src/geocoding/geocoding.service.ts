@@ -38,12 +38,23 @@ export class GeocodingService {
    */
   geocodeAddressAsync(addressId: string, zipCode: string): void {
     // Fire and forget - don't await
-    this.processGeocoding(addressId, zipCode).catch((error) => {
+    this.processAddressGeocoding(addressId, zipCode).catch((error) => {
       this.logger.error(`Background geocoding failed for address ${addressId}:`, error);
     });
   }
 
-  private async processGeocoding(addressId: string, zipCode: string): Promise<void> {
+  /**
+   * Geocodes a restaurant address asynchronously in the background.
+   * Does not block - fires and forgets, updating the restaurant when coordinates are found.
+   */
+  geocodeRestaurantAsync(restaurantId: string, zipCode: string): void {
+    // Fire and forget - don't await
+    this.processRestaurantGeocoding(restaurantId, zipCode).catch((error) => {
+      this.logger.error(`Background geocoding failed for restaurant ${restaurantId}:`, error);
+    });
+  }
+
+  private async processAddressGeocoding(addressId: string, zipCode: string): Promise<void> {
     const coordinates = await this.getCoordinatesFromCep(zipCode);
 
     if (coordinates) {
@@ -57,6 +68,23 @@ export class GeocodingService {
       this.logger.log(`Geocoded address ${addressId}: ${coordinates.latitude}, ${coordinates.longitude}`);
     } else {
       this.logger.warn(`Could not geocode address ${addressId} with CEP ${zipCode}`);
+    }
+  }
+
+  private async processRestaurantGeocoding(restaurantId: string, zipCode: string): Promise<void> {
+    const coordinates = await this.getCoordinatesFromCep(zipCode);
+
+    if (coordinates) {
+      await this.prisma.restaurant.update({
+        where: { id: restaurantId },
+        data: {
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+        },
+      });
+      this.logger.log(`Geocoded restaurant ${restaurantId}: ${coordinates.latitude}, ${coordinates.longitude}`);
+    } else {
+      this.logger.warn(`Could not geocode restaurant ${restaurantId} with CEP ${zipCode}`);
     }
   }
 

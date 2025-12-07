@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/fclebinho/zefood.app/compare/v1.2.0...v1.2.1) (2025-12-07)
+
+
+### Bug Fixes
+
+* support REDIS_URL environment variable for Redis adapter ([6eaa368](https://github.com/fclebinho/zefood.app/commit/6eaa3680ad7407a3526a043414330b91014841fb))
+
 ## [1.2.0](https://github.com/fclebinho/zefood.app/compare/v1.1.9...v1.2.0) (2025-12-06)
 
 

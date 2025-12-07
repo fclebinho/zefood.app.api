@@ -1,7 +1,21 @@
-import { PrismaClient, UserRole, UserStatus, RestaurantStatus, DriverStatus, VehicleType, RestaurantRole } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, RestaurantStatus, DriverStatus, VehicleType, RestaurantRole, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// Realistic coordinates for São Paulo
+const COORDINATES = {
+  // Restaurants
+  burgerKing: { lat: -23.5617, lng: -46.6563 }, // Av. Paulista, 1000
+  pizzaHut: { lat: -23.5537, lng: -46.6597 },   // Rua Augusta, 500
+  sushiMaster: { lat: -23.5578, lng: -46.6295 }, // Rua Liberdade, 200
+  // Customers
+  customerCasa: { lat: -23.5505, lng: -46.6333 },      // Centro
+  customerTrabalho: { lat: -23.5629, lng: -46.6544 },  // Near Paulista
+  // Drivers
+  driver1: { lat: -23.5550, lng: -46.6400 },   // Between locations
+  driver2: { lat: -23.5600, lng: -46.6500 },   // Near Paulista
+};
 
 async function main() {
   console.log('Seeding database...');
@@ -104,18 +118,33 @@ async function main() {
         },
       },
       addresses: {
-        create: {
-          label: 'Casa',
-          street: 'Rua das Flores',
-          number: '123',
-          neighborhood: 'Centro',
-          city: 'São Paulo',
-          state: 'SP',
-          zipCode: '01310-100',
-          latitude: -23.5505,
-          longitude: -46.6333,
-          isDefault: true,
-        },
+        create: [
+          {
+            label: 'Casa',
+            street: 'Rua das Flores',
+            number: '123',
+            neighborhood: 'Centro',
+            city: 'São Paulo',
+            state: 'SP',
+            zipCode: '01310-100',
+            latitude: COORDINATES.customerCasa.lat,
+            longitude: COORDINATES.customerCasa.lng,
+            isDefault: true,
+          },
+          {
+            label: 'Trabalho',
+            street: 'Av. Paulista',
+            number: '1500',
+            complement: 'Sala 1001',
+            neighborhood: 'Bela Vista',
+            city: 'São Paulo',
+            state: 'SP',
+            zipCode: '01310-200',
+            latitude: COORDINATES.customerTrabalho.lat,
+            longitude: COORDINATES.customerTrabalho.lng,
+            isDefault: false,
+          },
+        ],
       },
     },
   });
@@ -151,8 +180,8 @@ async function main() {
       city: 'São Paulo',
       state: 'SP',
       zipCode: '01310-100',
-      latitude: -23.5617,
-      longitude: -46.6563,
+      latitude: COORDINATES.burgerKing.lat,
+      longitude: COORDINATES.burgerKing.lng,
       logoUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200',
       coverUrl: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800',
       deliveryFee: 5.99,
@@ -324,12 +353,46 @@ async function main() {
           vehicleType: VehicleType.MOTORCYCLE,
           vehiclePlate: 'ABC1D23',
           status: DriverStatus.APPROVED,
+          isOnline: true,
+          currentLat: COORDINATES.driver1.lat,
+          currentLng: COORDINATES.driver1.lng,
+          lastLocationAt: new Date(),
         },
       },
     },
   });
 
   console.log(`Created driver user: ${driverUser.email}`);
+
+  // Create second driver user
+  const driver2PasswordHash = await bcrypt.hash('driver456', 12);
+  const driver2User = await prisma.user.upsert({
+    where: { email: 'entregador2@teste.com' },
+    update: {},
+    create: {
+      email: 'entregador2@teste.com',
+      passwordHash: driver2PasswordHash,
+      role: UserRole.DRIVER,
+      status: UserStatus.ACTIVE,
+      phone: '11977777777',
+      driver: {
+        create: {
+          fullName: 'Maria Entregadora',
+          cpf: '11122233344',
+          birthDate: new Date('1995-06-20'),
+          vehicleType: VehicleType.BICYCLE,
+          vehiclePlate: null,
+          status: DriverStatus.APPROVED,
+          isOnline: true,
+          currentLat: COORDINATES.driver2.lat,
+          currentLng: COORDINATES.driver2.lng,
+          lastLocationAt: new Date(),
+        },
+      },
+    },
+  });
+
+  console.log(`Created driver user: ${driver2User.email}`);
 
   // Create another restaurant (Pizza)
   const pizzaRestaurant = await prisma.restaurant.upsert({
@@ -347,8 +410,8 @@ async function main() {
       city: 'São Paulo',
       state: 'SP',
       zipCode: '01304-000',
-      latitude: -23.5537,
-      longitude: -46.6597,
+      latitude: COORDINATES.pizzaHut.lat,
+      longitude: COORDINATES.pizzaHut.lng,
       logoUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200',
       coverUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800',
       deliveryFee: 7.99,
@@ -437,8 +500,8 @@ async function main() {
       city: 'São Paulo',
       state: 'SP',
       zipCode: '01503-000',
-      latitude: -23.5578,
-      longitude: -46.6295,
+      latitude: COORDINATES.sushiMaster.lat,
+      longitude: COORDINATES.sushiMaster.lng,
       logoUrl: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200',
       coverUrl: 'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=800',
       deliveryFee: 8.99,
@@ -511,7 +574,162 @@ async function main() {
 
   console.log(`Created restaurant: ${sushiRestaurant.name}`);
 
+  // Get customer and driver data for orders
+  const customer = await prisma.customer.findFirst({
+    where: { user: { email: 'cliente@teste.com' } },
+  });
+
+  const driver = await prisma.driver.findFirst({
+    where: { user: { email: 'entregador@teste.com' } },
+  });
+
+  const customerAddress = await prisma.address.findFirst({
+    where: { userId: customerUser.id, isDefault: true },
+  });
+
+  // Get menu items for orders
+  const whopper = await prisma.menuItem.findFirst({
+    where: { name: 'Whopper' },
+  });
+
+  const batataFrita = await prisma.menuItem.findFirst({
+    where: { name: 'Batata Frita M' },
+  });
+
+  const cocaCola = await prisma.menuItem.findFirst({
+    where: { name: 'Coca-Cola 350ml' },
+  });
+
+  if (customer && driver && customerAddress && whopper && batataFrita && cocaCola) {
+    // Create sample order - READY (waiting for driver)
+    const orderReady = await prisma.order.upsert({
+      where: { id: 'seed-order-ready-001' },
+      update: {},
+      create: {
+        id: 'seed-order-ready-001',
+        restaurantId: restaurant.id,
+        customerId: customer.id,
+        status: OrderStatus.READY,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+        paymentStatus: PaymentStatus.PAID,
+        subtotal: 46.70,
+        deliveryFee: 5.99,
+        total: 52.69,
+        deliveryAddress: {
+          street: customerAddress.street,
+          number: customerAddress.number,
+          neighborhood: customerAddress.neighborhood,
+          city: customerAddress.city,
+          state: customerAddress.state,
+          zipCode: customerAddress.zipCode,
+          latitude: customerAddress.latitude,
+          longitude: customerAddress.longitude,
+        },
+        notes: 'Sem cebola no hambúrguer, por favor',
+        estimatedDeliveryAt: new Date(Date.now() + 45 * 60 * 1000),
+        items: {
+          create: [
+            {
+              menuItemId: whopper.id,
+              quantity: 1,
+              unitPrice: 29.90,
+              totalPrice: 29.90,
+            },
+            {
+              menuItemId: batataFrita.id,
+              quantity: 1,
+              unitPrice: 9.90,
+              totalPrice: 9.90,
+            },
+            {
+              menuItemId: cocaCola.id,
+              quantity: 1,
+              unitPrice: 6.90,
+              totalPrice: 6.90,
+            },
+          ],
+        },
+        statusHistory: {
+          create: [
+            { status: OrderStatus.PENDING, createdAt: new Date(Date.now() - 30 * 60 * 1000) },
+            { status: OrderStatus.CONFIRMED, createdAt: new Date(Date.now() - 25 * 60 * 1000) },
+            { status: OrderStatus.PREPARING, createdAt: new Date(Date.now() - 20 * 60 * 1000) },
+            { status: OrderStatus.READY, createdAt: new Date(Date.now() - 5 * 60 * 1000) },
+          ],
+        },
+      },
+    });
+
+    console.log(`Created order READY: ${orderReady.id}`);
+
+    // Create sample order - IN_TRANSIT (driver delivering)
+    const orderInTransit = await prisma.order.upsert({
+      where: { id: 'seed-order-transit-001' },
+      update: {},
+      create: {
+        id: 'seed-order-transit-001',
+        restaurantId: restaurant.id,
+        customerId: customer.id,
+        driverId: driver.id,
+        status: OrderStatus.IN_TRANSIT,
+        paymentMethod: PaymentMethod.PIX,
+        paymentStatus: PaymentStatus.PAID,
+        subtotal: 39.80,
+        deliveryFee: 5.99,
+        total: 45.79,
+        deliveryAddress: {
+          street: 'Av. Paulista',
+          number: '1500',
+          complement: 'Sala 1001',
+          neighborhood: 'Bela Vista',
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: '01310-200',
+          latitude: COORDINATES.customerTrabalho.lat,
+          longitude: COORDINATES.customerTrabalho.lng,
+        },
+        notes: null,
+        pickedUpAt: new Date(Date.now() - 10 * 60 * 1000),
+        estimatedDeliveryAt: new Date(Date.now() + 15 * 60 * 1000),
+        items: {
+          create: [
+            {
+              menuItemId: whopper.id,
+              quantity: 1,
+              unitPrice: 29.90,
+              totalPrice: 29.90,
+            },
+            {
+              menuItemId: batataFrita.id,
+              quantity: 1,
+              unitPrice: 9.90,
+              totalPrice: 9.90,
+            },
+          ],
+        },
+        statusHistory: {
+          create: [
+            { status: OrderStatus.PENDING, createdAt: new Date(Date.now() - 60 * 60 * 1000) },
+            { status: OrderStatus.CONFIRMED, createdAt: new Date(Date.now() - 55 * 60 * 1000) },
+            { status: OrderStatus.PREPARING, createdAt: new Date(Date.now() - 50 * 60 * 1000) },
+            { status: OrderStatus.READY, createdAt: new Date(Date.now() - 20 * 60 * 1000) },
+            { status: OrderStatus.PICKED_UP, createdAt: new Date(Date.now() - 10 * 60 * 1000) },
+            { status: OrderStatus.IN_TRANSIT, createdAt: new Date(Date.now() - 5 * 60 * 1000) },
+          ],
+        },
+      },
+    });
+
+    console.log(`Created order IN_TRANSIT: ${orderInTransit.id}`);
+  }
+
   console.log('Seed completed successfully!');
+  console.log('\n--- Test Accounts ---');
+  console.log('Admin: admin@zefood.com / admin123');
+  console.log('Customer: cliente@teste.com / customer123');
+  console.log('Restaurant: restaurante@teste.com / restaurant123');
+  console.log('Driver 1: entregador@teste.com / driver123');
+  console.log('Driver 2: entregador2@teste.com / driver456');
 }
 
 main()

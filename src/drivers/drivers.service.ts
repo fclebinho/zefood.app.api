@@ -224,10 +224,29 @@ export class DriversService {
         },
       },
       include: {
-        restaurant: true,
+        restaurant: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            street: true,
+            number: true,
+            neighborhood: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
         customer: {
           select: {
             fullName: true,
+            user: {
+              select: {
+                phone: true,
+              },
+            },
           },
         },
         items: {

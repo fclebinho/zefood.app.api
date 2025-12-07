@@ -110,6 +110,8 @@ export class TrackingService {
             neighborhood: true,
             city: true,
             state: true,
+            latitude: true,
+            longitude: true,
           },
         },
         customer: {
@@ -151,6 +153,8 @@ export class TrackingService {
         id: order.restaurant.id,
         name: order.restaurant.name,
         address: `${order.restaurant.street}, ${order.restaurant.number} - ${order.restaurant.neighborhood}`,
+        latitude: order.restaurant.latitude ? Number(order.restaurant.latitude) : null,
+        longitude: order.restaurant.longitude ? Number(order.restaurant.longitude) : null,
       },
       deliveryAddress: deliveryAddress
         ? {
@@ -160,6 +164,8 @@ export class TrackingService {
             neighborhood: deliveryAddress.neighborhood,
             city: deliveryAddress.city,
             state: deliveryAddress.state,
+            latitude: deliveryAddress.latitude,
+            longitude: deliveryAddress.longitude,
           }
         : null,
       estimatedDelivery: order.estimatedDeliveryAt,
@@ -190,6 +196,8 @@ export class TrackingService {
             neighborhood: true,
             city: true,
             state: true,
+            latitude: true,
+            longitude: true,
           },
         },
       },
@@ -212,6 +220,8 @@ export class TrackingService {
         id: order.restaurant.id,
         name: order.restaurant.name,
         address: `${order.restaurant.street}, ${order.restaurant.number}`,
+        latitude: order.restaurant.latitude ? Number(order.restaurant.latitude) : null,
+        longitude: order.restaurant.longitude ? Number(order.restaurant.longitude) : null,
       },
       deliveryAddress: deliveryAddress
         ? {

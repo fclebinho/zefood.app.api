@@ -36,5 +36,11 @@ COPY --from=builder /app/prisma ./prisma
 # Expose port
 EXPOSE 3001
 
-# Start the application
-CMD ["node", "dist/main.js"]
+# Create startup script that runs migrations before starting
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'npx prisma db push --skip-generate' >> /app/start.sh && \
+    echo 'node dist/main.js' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Start the application with migrations
+CMD ["/bin/sh", "/app/start.sh"]

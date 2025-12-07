@@ -603,8 +603,8 @@ export class RestaurantsService {
           status: { notIn: [OrderStatus.CANCELLED] },
         },
       },
-      _sum: { quantity: true, subtotal: true },
-      orderBy: { _sum: { subtotal: 'desc' } },
+      _sum: { quantity: true, totalPrice: true },
+      orderBy: { _sum: { totalPrice: 'desc' } },
       take: 5,
     });
 
@@ -617,17 +617,17 @@ export class RestaurantsService {
 
     const menuItemMap = new Map(menuItems.map((m) => [m.id, m.name]));
     const totalProductRevenue = topProducts.reduce(
-      (sum, p) => sum + (Number(p._sum.subtotal) || 0),
+      (sum, p) => sum + (Number(p._sum?.totalPrice) || 0),
       0,
     );
 
     const formattedTopProducts = topProducts.map((p) => ({
       name: menuItemMap.get(p.menuItemId) || 'Produto Desconhecido',
-      quantity: p._sum.quantity || 0,
-      revenue: Number(p._sum.subtotal) || 0,
+      quantity: p._sum?.quantity || 0,
+      revenue: Number(p._sum?.totalPrice) || 0,
       percent:
         totalProductRevenue > 0
-          ? Math.round(((Number(p._sum.subtotal) || 0) / totalProductRevenue) * 100)
+          ? Math.round(((Number(p._sum?.totalPrice) || 0) / totalProductRevenue) * 100)
           : 0,
     }));
 

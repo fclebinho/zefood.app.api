@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 import { RestaurantStatus, OrderStatus } from '@prisma/client';
 import { CreateMenuItemDto, UpdateMenuItemDto } from './dto/menu-item.dto';
 import { CreateMenuCategoryDto, UpdateMenuCategoryDto } from './dto/menu-category.dto';
@@ -11,7 +12,10 @@ import { UpdateRestaurantSettingsDto } from './dto/restaurant-settings.dto';
 
 @Injectable()
 export class RestaurantsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private geocodingService: GeocodingService,
+  ) {}
 
   async findAll(query: {
     categoryId?: string;
@@ -219,13 +223,20 @@ export class RestaurantsService {
       }
     }
 
-    return this.prisma.restaurant.update({
+    const updatedRestaurant = await this.prisma.restaurant.update({
       where: { id: restaurantId },
       data: updateData,
       include: {
         hours: true,
       },
     });
+
+    // Geocode restaurant address asynchronously if zipCode was updated
+    if (restaurantData.zipCode) {
+      this.geocodingService.geocodeRestaurantAsync(restaurantId, restaurantData.zipCode);
+    }
+
+    return updatedRestaurant;
   }
 
   async toggleOnlineStatus(userId: string) {

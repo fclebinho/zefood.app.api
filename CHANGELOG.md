@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.3](https://github.com/fclebinho/zefood.app/compare/v1.2.2...v1.2.3) (2025-12-07)
+
+
+### Features
+
+* add restaurant reports endpoint with real statistics ([fe63e5f](https://github.com/fclebinho/zefood.app/commit/fe63e5f70384d3361c26d4afb8764732ed5db849))
+
 ### [1.2.2](https://github.com/fclebinho/zefood.app/compare/v1.2.1...v1.2.2) (2025-12-07)
 
 ### [1.2.1](https://github.com/fclebinho/zefood.app/compare/v1.2.0...v1.2.1) (2025-12-07)

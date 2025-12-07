@@ -631,18 +631,21 @@ async function main() {
           create: [
             {
               menuItemId: whopper.id,
+              name: whopper.name,
               quantity: 1,
               unitPrice: 29.90,
               totalPrice: 29.90,
             },
             {
               menuItemId: batataFrita.id,
+              name: batataFrita.name,
               quantity: 1,
               unitPrice: 9.90,
               totalPrice: 9.90,
             },
             {
               menuItemId: cocaCola.id,
+              name: cocaCola.name,
               quantity: 1,
               unitPrice: 6.90,
               totalPrice: 6.90,
@@ -695,12 +698,14 @@ async function main() {
           create: [
             {
               menuItemId: whopper.id,
+              name: whopper.name,
               quantity: 1,
               unitPrice: 29.90,
               totalPrice: 29.90,
             },
             {
               menuItemId: batataFrita.id,
+              name: batataFrita.name,
               quantity: 1,
               unitPrice: 9.90,
               totalPrice: 9.90,

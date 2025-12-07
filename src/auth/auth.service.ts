@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterRestaurantDto } from './dto/register-restaurant.dto';
 import { UserRole } from '@prisma/client';
@@ -19,6 +20,7 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private configService: ConfigService,
+    private geocodingService: GeocodingService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -71,7 +73,7 @@ export class AuthService {
                 },
               }
             : undefined,
-        // Create address if provided
+        // Create address if provided (without coordinates - will be geocoded async)
         addresses: registerDto.address
           ? {
               create: {
@@ -82,8 +84,6 @@ export class AuthService {
                 city: registerDto.address.city,
                 state: registerDto.address.state,
                 zipCode: registerDto.address.zipCode,
-                latitude: registerDto.address.latitude,
-                longitude: registerDto.address.longitude,
                 isDefault: true,
               },
             }
@@ -94,6 +94,14 @@ export class AuthService {
         addresses: true,
       },
     });
+
+    // Geocode address asynchronously in background (fire and forget)
+    if (user.addresses.length > 0) {
+      this.geocodingService.geocodeAddressAsync(
+        user.addresses[0].id,
+        user.addresses[0].zipCode,
+      );
+    }
 
     return this.login({
       id: user.id,

@@ -6,7 +6,6 @@ import {
   IsEnum,
   ValidateNested,
   IsObject,
-  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -41,16 +40,6 @@ class AddressDto {
   @ApiProperty({ example: '01234-567', description: 'CEP' })
   @IsString()
   zipCode: string;
-
-  @ApiPropertyOptional({ example: -23.5505, description: 'Latitude' })
-  @IsNumber()
-  @IsOptional()
-  latitude?: number;
-
-  @ApiPropertyOptional({ example: -46.6333, description: 'Longitude' })
-  @IsNumber()
-  @IsOptional()
-  longitude?: number;
 }
 
 export class RegisterDto {

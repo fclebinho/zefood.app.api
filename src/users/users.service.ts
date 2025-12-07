@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private geocodingService: GeocodingService,
+  ) {}
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
@@ -106,7 +110,8 @@ export class UsersService {
       where: { userId },
     });
 
-    return this.prisma.address.create({
+    // Create address immediately without coordinates
+    const address = await this.prisma.address.create({
       data: {
         userId,
         street: createAddressDto.street,
@@ -116,11 +121,14 @@ export class UsersService {
         city: createAddressDto.city,
         state: createAddressDto.state,
         zipCode: createAddressDto.zipCode,
-        latitude: createAddressDto.latitude,
-        longitude: createAddressDto.longitude,
         isDefault: createAddressDto.isDefault || existingAddresses === 0,
       },
     });
+
+    // Geocode asynchronously in background (fire and forget)
+    this.geocodingService.geocodeAddressAsync(address.id, createAddressDto.zipCode);
+
+    return address;
   }
 
   async updateAddress(userId: string, addressId: string, updateAddressDto: CreateAddressDto) {
@@ -139,7 +147,8 @@ export class UsersService {
       });
     }
 
-    return this.prisma.address.update({
+    // Update address immediately without coordinates
+    const updatedAddress = await this.prisma.address.update({
       where: { id: addressId },
       data: {
         street: updateAddressDto.street,
@@ -149,11 +158,16 @@ export class UsersService {
         city: updateAddressDto.city,
         state: updateAddressDto.state,
         zipCode: updateAddressDto.zipCode,
-        latitude: updateAddressDto.latitude,
-        longitude: updateAddressDto.longitude,
+        latitude: null,
+        longitude: null,
         isDefault: updateAddressDto.isDefault,
       },
     });
+
+    // Geocode asynchronously in background (fire and forget)
+    this.geocodingService.geocodeAddressAsync(addressId, updateAddressDto.zipCode);
+
+    return updatedAddress;
   }
 
   async deleteAddress(userId: string, addressId: string) {

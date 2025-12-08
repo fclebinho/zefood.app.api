@@ -12,14 +12,7 @@ import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-      'http://localhost:8081',
-      'https://zefood.app',
-      'https://www.zefood.app',
-    ],
+    origin: '*',
     credentials: true,
   },
   namespace: '/orders',

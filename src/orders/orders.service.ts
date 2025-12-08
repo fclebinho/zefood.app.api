@@ -125,6 +125,14 @@ export class OrdersService {
       };
     });
 
+    // Validate minimum order value (based on subtotal, not including delivery fee)
+    const minOrderValue = restaurant.minOrderValue?.toNumber() || 0;
+    if (minOrderValue > 0 && subtotal < minOrderValue) {
+      throw new BadRequestException(
+        `Pedido mínimo de R$ ${minOrderValue.toFixed(2).replace('.', ',')}. Seu pedido: R$ ${subtotal.toFixed(2).replace('.', ',')}`,
+      );
+    }
+
     const deliveryFee = restaurant.deliveryFee.toNumber();
     const total = subtotal + deliveryFee;
 
@@ -159,8 +167,8 @@ export class OrdersService {
       },
     });
 
-    // Emit WebSocket event for new order
-    this.ordersGateway.emitNewOrder(order);
+    // Note: WebSocket notification is now sent after payment confirmation
+    // See PaymentsService.processPayment for the emission logic
 
     return order;
   }

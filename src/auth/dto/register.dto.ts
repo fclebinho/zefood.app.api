@@ -56,6 +56,10 @@ export class RegisterDto {
   @IsString()
   name: string;
 
+  @ApiProperty({ example: '12345678900', description: 'CPF do usuário (apenas números)' })
+  @IsString()
+  cpf: string;
+
   @ApiPropertyOptional({ example: '11999999999', description: 'Telefone' })
   @IsString()
   @IsOptional()

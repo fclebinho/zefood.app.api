@@ -59,21 +59,49 @@ enum UserStatus {
 }
 
 model Customer {
-  id        String    @id @default(uuid())
-  userId    String    @unique @map("user_id")
-  fullName  String    @map("full_name")
-  cpf       String?   @unique
-  birthDate DateTime? @map("birth_date")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  userId           String    @unique @map("user_id")
+  fullName         String    @map("full_name")
+  cpf              String?   @unique
+  birthDate        DateTime? @map("birth_date")
+  mpCustomerId     String?   @unique @map("mp_customer_id") // Mercado Pago Customer ID
+  stripeCustomerId String?   @unique @map("stripe_customer_id") // Stripe Customer ID
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders       Order[]
   ratings      Rating[]
   favorites    Favorite[]
   couponUsages CouponUsage[]
+  savedCards   SavedCard[]
 
   @@map("customers")
+}
+
+model SavedCard {
+  id              String      @id @default(uuid())
+  customerId      String      @map("customer_id")
+  provider        CardProvider @default(MERCADOPAGO) // Which payment provider
+  mpCardId        String?     @map("mp_card_id") // Mercado Pago Card ID
+  stripePaymentMethodId String? @map("stripe_pm_id") // Stripe PaymentMethod ID
+  lastFourDigits  String      @map("last_four_digits")
+  expirationMonth Int         @map("expiration_month")
+  expirationYear  Int         @map("expiration_year")
+  cardholderName  String      @map("cardholder_name")
+  brand           String      // visa, master, elo, etc
+  paymentMethodId String      @map("payment_method_id") // Provider's payment method ID
+  isDefault       Boolean     @default(false) @map("is_default")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("saved_cards")
+}
+
+enum CardProvider {
+  MERCADOPAGO
+  STRIPE
 }
 
 model Address {

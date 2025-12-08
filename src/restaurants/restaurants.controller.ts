@@ -67,6 +67,15 @@ export class RestaurantsController {
     return this.restaurantsService.getRestaurantByUserId(userId);
   }
 
+  @Get('my/settings')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('RESTAURANT')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get restaurant settings' })
+  async getMySettings(@CurrentUser('sub') userId: string) {
+    return this.restaurantsService.getRestaurantByUserId(userId);
+  }
+
   @Patch('my/settings')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('RESTAURANT')

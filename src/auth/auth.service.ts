@@ -41,12 +41,27 @@ export class AuthService {
     const tokens = await this.generateTokens(user);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+    // Fetch full user data with customer info
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        customer: {
+          select: {
+            id: true,
+            fullName: true,
+            cpf: true,
+          },
+        },
       },
+    });
+
+    return {
+      user: fullUser,
       ...tokens,
     };
   }
@@ -70,6 +85,7 @@ export class AuthService {
             ? {
                 create: {
                   fullName: registerDto.name,
+                  cpf: registerDto.cpf,
                 },
               }
             : undefined,
@@ -223,12 +239,27 @@ export class AuthService {
     const tokens = await this.generateTokens(tokenRecord.user);
     await this.saveRefreshToken(tokenRecord.user.id, tokens.refreshToken);
 
-    return {
-      user: {
-        id: tokenRecord.user.id,
-        email: tokenRecord.user.email,
-        role: tokenRecord.user.role,
+    // Fetch full user data with customer info
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: tokenRecord.user.id },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        customer: {
+          select: {
+            id: true,
+            fullName: true,
+            cpf: true,
+          },
+        },
       },
+    });
+
+    return {
+      user: fullUser,
       ...tokens,
     };
   }

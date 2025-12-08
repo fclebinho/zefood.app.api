@@ -105,7 +105,19 @@ async function main() {
   const customerPasswordHash = await bcrypt.hash('customer123', 12);
   const customerUser = await prisma.user.upsert({
     where: { email: 'cliente@teste.com' },
-    update: {},
+    update: {
+      customer: {
+        upsert: {
+          create: {
+            fullName: 'João Silva',
+            cpf: '52998224725', // CPF válido para testes
+          },
+          update: {
+            cpf: '52998224725', // Ensure CPF is set on existing customers
+          },
+        },
+      },
+    },
     create: {
       email: 'cliente@teste.com',
       passwordHash: customerPasswordHash,
@@ -114,7 +126,7 @@ async function main() {
       customer: {
         create: {
           fullName: 'João Silva',
-          cpf: '12345678901',
+          cpf: '52998224725', // CPF válido para testes
         },
       },
       addresses: {
@@ -348,7 +360,7 @@ async function main() {
       driver: {
         create: {
           fullName: 'Carlos Motorista',
-          cpf: '98765432100',
+          cpf: '71428793860', // CPF válido para testes
           birthDate: new Date('1990-01-15'),
           vehicleType: VehicleType.MOTORCYCLE,
           vehiclePlate: 'ABC1D23',
@@ -378,7 +390,7 @@ async function main() {
       driver: {
         create: {
           fullName: 'Maria Entregadora',
-          cpf: '11122233344',
+          cpf: '87748248800', // CPF válido para testes
           birthDate: new Date('1995-06-20'),
           vehicleType: VehicleType.BICYCLE,
           vehiclePlate: null,

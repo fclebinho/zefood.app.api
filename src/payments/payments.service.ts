@@ -6,6 +6,7 @@ import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentMethod, PaymentStatus, CardProvider } from '@prisma/client';
 import { OrdersGateway } from '../websocket/orders.gateway';
+import { SettingsService } from '../settings/settings.service';
 
 export interface CardDataInput {
   cardNumber: string;
@@ -70,6 +71,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => OrdersGateway))
     private readonly ordersGateway: OrdersGateway,
+    private readonly settingsService: SettingsService,
   ) {
     // Initialize Stripe
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
@@ -88,27 +90,75 @@ export class PaymentsService {
     }
   }
 
-  getAvailablePaymentMethods() {
+  async getAvailablePaymentMethods() {
+    // Get settings for enabled gateways
+    const pixEnabled = await this.settingsService.get<boolean>('pix_enabled') ?? true;
+    const cardEnabled = await this.settingsService.get<boolean>('card_enabled') ?? true;
+    const cashEnabled = await this.settingsService.get<boolean>('cash_enabled') ?? true;
+    const stripeEnabled = await this.settingsService.get<boolean>('stripe_enabled') ?? true;
+    const mercadopagoEnabled = await this.settingsService.get<boolean>('mercadopago_enabled') ?? true;
+
+    // Card payment is available if gateway is configured AND enabled in settings
+    const stripeAvailable = !!this.stripe && stripeEnabled;
+    const mpAvailable = !!this.mercadopago && mercadopagoEnabled;
+    const hasCardPayment = cardEnabled && (stripeAvailable || mpAvailable);
+
     const methods = [
-      { value: 'PIX', label: 'Pix', icon: '💠', available: true },
+      { value: 'PIX', label: 'Pix', icon: '💠', available: pixEnabled && !!this.mercadopago },
       {
         value: 'CREDIT_CARD',
         label: 'Cartão de crédito',
         icon: '💳',
-        available: !!(this.stripe || this.mercadopago),
+        available: hasCardPayment,
       },
       {
         value: 'DEBIT_CARD',
         label: 'Cartão de débito',
         icon: '💳',
-        available: !!(this.stripe || this.mercadopago),
+        available: hasCardPayment,
+      },
+      {
+        value: 'CASH',
+        label: 'Dinheiro',
+        icon: '💵',
+        available: cashEnabled,
       },
     ];
 
     return {
       methods,
-      hasCardPayment: !!(this.stripe || this.mercadopago),
+      hasCardPayment,
+      enabledGateways: {
+        stripe: stripeAvailable,
+        mercadopago: mpAvailable,
+      },
     };
+  }
+
+  /**
+   * Check if Stripe gateway is enabled
+   */
+  async isStripeEnabled(): Promise<boolean> {
+    if (!this.stripe) return false;
+    const enabled = await this.settingsService.get<boolean>('stripe_enabled');
+    return enabled ?? true;
+  }
+
+  /**
+   * Check if Mercado Pago gateway is enabled
+   */
+  async isMercadoPagoEnabled(): Promise<boolean> {
+    if (!this.mercadopago) return false;
+    const enabled = await this.settingsService.get<boolean>('mercadopago_enabled');
+    return enabled ?? true;
+  }
+
+  /**
+   * Get the configured card gateway (stripe, mercadopago, or both)
+   */
+  async getCardGateway(): Promise<string> {
+    const gateway = await this.settingsService.get<string>('card_gateway');
+    return gateway ?? 'both';
   }
 
   async processPayment(dto: CreatePaymentDto, userId: string): Promise<PaymentResult> {

@@ -79,15 +79,33 @@ const DEFAULT_SETTINGS = [
     isPublic: false,
   },
 
-  // Payment Gateway
+  // Payment Gateway - Card Providers
   {
-    key: 'payment_gateway',
-    value: 'stripe',
+    key: 'card_gateway',
+    value: 'both',
     type: 'STRING',
     category: 'payment',
-    label: 'Gateway de Pagamento',
-    description: 'Gateway de pagamento ativo (stripe, mercadopago, pagseguro)',
-    isPublic: false,
+    label: 'Gateway de Cartao',
+    description: 'Gateway para pagamentos com cartao: stripe, mercadopago, both (ambos)',
+    isPublic: true,
+  },
+  {
+    key: 'stripe_enabled',
+    value: 'true',
+    type: 'BOOLEAN',
+    category: 'payment',
+    label: 'Stripe Habilitado',
+    description: 'Habilita pagamentos via Stripe (1-click sem CVV)',
+    isPublic: true,
+  },
+  {
+    key: 'mercadopago_enabled',
+    value: 'true',
+    type: 'BOOLEAN',
+    category: 'payment',
+    label: 'Mercado Pago Habilitado',
+    description: 'Habilita pagamentos via Mercado Pago',
+    isPublic: true,
   },
   {
     key: 'stripe_public_key',

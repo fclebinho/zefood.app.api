@@ -94,11 +94,11 @@ export class PaymentsService {
   async initializeStripe(): Promise<boolean> {
     try {
       // Primeiro tenta buscar do banco de dados
-      let stripeKey = await this.settingsService.get<string>('stripe_secret_key');
+      let stripeKey: string | null | undefined = await this.settingsService.get<string>('stripe_secret_key');
 
       // Fallback para variável de ambiente
       if (!stripeKey) {
-        stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+        stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY') ?? null;
       }
 
       if (stripeKey && stripeKey.trim() !== '') {
@@ -125,11 +125,11 @@ export class PaymentsService {
   async initializeMercadoPago(): Promise<boolean> {
     try {
       // Primeiro tenta buscar do banco de dados
-      let mpToken = await this.settingsService.get<string>('mercadopago_access_token');
+      let mpToken: string | null | undefined = await this.settingsService.get<string>('mercadopago_access_token');
 
       // Fallback para variável de ambiente
       if (!mpToken) {
-        mpToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
+        mpToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN') ?? null;
       }
 
       if (mpToken && mpToken.trim() !== '') {

@@ -6,12 +6,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { DriverStatus, OrderStatus } from '@prisma/client';
 import { OrdersGateway } from '../websocket/orders.gateway';
+import { TrackingGateway } from '../tracking/tracking.gateway';
 
 @Injectable()
 export class DriversService {
   constructor(
     private prisma: PrismaService,
     private ordersGateway: OrdersGateway,
+    private trackingGateway: TrackingGateway,
   ) {}
 
   async getProfile(userId: string) {
@@ -199,6 +201,7 @@ export class DriversService {
 
     // Emit WebSocket events
     this.ordersGateway.emitOrderStatusUpdate(updatedOrder);
+    this.trackingGateway.emitOrderStatusUpdate(updatedOrder);
     this.ordersGateway.emitDeliveryTaken(orderId);
 
     return updatedOrder;

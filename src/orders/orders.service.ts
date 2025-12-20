@@ -7,12 +7,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersGateway } from '../websocket/orders.gateway';
+import { TrackingGateway } from '../tracking/tracking.gateway';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private ordersGateway: OrdersGateway,
+    private trackingGateway: TrackingGateway,
   ) {}
 
   async create(customerId: string, createOrderDto: CreateOrderDto) {
@@ -331,6 +333,8 @@ export class OrdersService {
 
     // Emit WebSocket event for status update
     this.ordersGateway.emitOrderStatusUpdate(updatedOrder);
+    // Also emit to tracking namespace for real-time tracking screen
+    this.trackingGateway.emitOrderStatusUpdate(updatedOrder);
 
     // If order is READY, notify available drivers
     if (status === OrderStatus.READY && !updatedOrder.driverId) {

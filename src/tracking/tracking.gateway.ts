@@ -151,6 +151,16 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.logger.log(`Driver arrived at ${location} for order ${orderId}`);
   }
 
+  // Emit order status update to tracking subscribers
+  emitOrderStatusUpdate(order: any) {
+    this.server.to(`tracking:order:${order.id}`).emit('orderStatusUpdate', {
+      orderId: order.id,
+      status: order.status,
+      order,
+    });
+    this.logger.log(`Emitted tracking status update for order ${order.id}: ${order.status}`);
+  }
+
   // Get order tracking info via REST-like socket call
   @SubscribeMessage('getOrderTracking')
   async handleGetOrderTracking(

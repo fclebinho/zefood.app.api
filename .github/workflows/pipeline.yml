@@ -60,17 +60,21 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Update backend image tag 🏷️
+      - name: Install yq 🔧
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update backend image tag in prod overlay 🏷️
         run: |
           cd iac-repo
-          # Update image tags in backend.yaml
-          sed -i "s|fclebinho/zefood.app.api:.*|fclebinho/zefood.app.api:${{ steps.get_version.outputs.VERSION }}|g" iac/k3s/base/backend.yaml
+          yq -i '(.images[] | select(.name == "fclebinho/zefood.app.api")).newTag = "${{ steps.get_version.outputs.VERSION }}"' iac/k3s/overlays/prod/kustomization.yaml
 
       - name: Commit and push changes 🚀
         run: |
           cd iac-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add iac/k3s/base/backend.yaml
+          git add iac/k3s/overlays/prod/kustomization.yaml
           git diff --staged --quiet || git commit -m "chore: update backend image to v${{ steps.get_version.outputs.VERSION }}"
           git push

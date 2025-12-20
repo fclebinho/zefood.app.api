@@ -65,7 +65,9 @@ export class GeocodingService {
           longitude: coordinates.longitude,
         },
       });
-      this.logger.log(`Geocoded address ${addressId}: ${coordinates.latitude}, ${coordinates.longitude}`);
+      this.logger.log(
+        `Geocoded address ${addressId}: ${coordinates.latitude}, ${coordinates.longitude}`,
+      );
     } else {
       this.logger.warn(`Could not geocode address ${addressId} with CEP ${zipCode}`);
     }
@@ -82,7 +84,9 @@ export class GeocodingService {
           longitude: coordinates.longitude,
         },
       });
-      this.logger.log(`Geocoded restaurant ${restaurantId}: ${coordinates.latitude}, ${coordinates.longitude}`);
+      this.logger.log(
+        `Geocoded restaurant ${restaurantId}: ${coordinates.latitude}, ${coordinates.longitude}`,
+      );
     } else {
       this.logger.warn(`Could not geocode restaurant ${restaurantId} with CEP ${zipCode}`);
     }
@@ -195,7 +199,9 @@ export class GeocodingService {
       const data: NominatimResponse[] = await response.json();
 
       if (data.length === 0) {
-        this.logger.warn(`Could not geocode address for ${viaCepData.localidade}, ${viaCepData.uf}`);
+        this.logger.warn(
+          `Could not geocode address for ${viaCepData.localidade}, ${viaCepData.uf}`,
+        );
         return null;
       }
 

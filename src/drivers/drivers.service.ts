@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { DriverStatus, OrderStatus } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 import { OrdersGateway } from '../websocket/orders.gateway';
 import { TrackingGateway } from '../tracking/tracking.gateway';
 
@@ -52,11 +48,7 @@ export class DriversService {
     });
   }
 
-  async updateLocation(
-    userId: string,
-    latitude: number,
-    longitude: number,
-  ) {
+  async updateLocation(userId: string, latitude: number, longitude: number) {
     const driver = await this.prisma.driver.findUnique({
       where: { userId },
     });
@@ -220,10 +212,7 @@ export class DriversService {
       where: {
         driverId: driver.id,
         status: {
-          in: [
-            OrderStatus.PICKED_UP,
-            OrderStatus.IN_TRANSIT,
-          ],
+          in: [OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT],
         },
       },
       include: {
@@ -323,12 +312,13 @@ export class DriversService {
 
     const where = {
       driverId: driver.id,
-      ...(startDate && endDate && {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      }),
+      ...(startDate &&
+        endDate && {
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        }),
     };
 
     const earnings = await this.prisma.driverEarning.findMany({
@@ -336,19 +326,15 @@ export class DriversService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const totalEarnings = earnings.reduce(
-      (sum, e) => sum + e.amount.toNumber(),
-      0,
-    );
-    const totalDeliveries = earnings.filter(e => e.type === 'DELIVERY').length;
+    const totalEarnings = earnings.reduce((sum, e) => sum + e.amount.toNumber(), 0);
+    const totalDeliveries = earnings.filter((e) => e.type === 'DELIVERY').length;
 
     return {
       earnings,
       summary: {
         totalEarnings,
         totalDeliveries,
-        averagePerDelivery:
-          totalDeliveries > 0 ? totalEarnings / totalDeliveries : 0,
+        averagePerDelivery: totalDeliveries > 0 ? totalEarnings / totalDeliveries : 0,
       },
     };
   }

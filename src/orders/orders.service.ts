@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -102,9 +98,7 @@ export class OrdersService {
     });
 
     // Verify all items belong to the same restaurant
-    const invalidItems = menuItems.filter(
-      (item) => item.category.restaurant.id !== restaurant.id,
-    );
+    const invalidItems = menuItems.filter((item) => item.category.restaurant.id !== restaurant.id);
     if (invalidItems.length > 0 || menuItems.length !== createOrderDto.items.length) {
       throw new BadRequestException('Invalid menu items');
     }
@@ -260,12 +254,7 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(
-    orderId: string,
-    status: OrderStatus,
-    userId: string,
-    _role: string,
-  ) {
+  async updateStatus(orderId: string, status: OrderStatus, userId: string, _role: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -284,10 +273,20 @@ export class OrdersService {
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
       [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
       [OrderStatus.PAID]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-      [OrderStatus.CONFIRMED]: [OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.REJECTED, OrderStatus.CANCELLED],
+      [OrderStatus.CONFIRMED]: [
+        OrderStatus.ACCEPTED,
+        OrderStatus.PREPARING,
+        OrderStatus.READY,
+        OrderStatus.REJECTED,
+        OrderStatus.CANCELLED,
+      ],
       [OrderStatus.ACCEPTED]: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
       [OrderStatus.PREPARING]: [OrderStatus.READY, OrderStatus.CANCELLED],
-      [OrderStatus.READY]: [OrderStatus.PICKED_UP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
+      [OrderStatus.READY]: [
+        OrderStatus.PICKED_UP,
+        OrderStatus.OUT_FOR_DELIVERY,
+        OrderStatus.CANCELLED,
+      ],
       [OrderStatus.PICKED_UP]: [OrderStatus.IN_TRANSIT, OrderStatus.OUT_FOR_DELIVERY],
       [OrderStatus.IN_TRANSIT]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
       [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
@@ -297,9 +296,7 @@ export class OrdersService {
     };
 
     if (!validTransitions[order.status].includes(status)) {
-      throw new BadRequestException(
-        `Cannot transition from ${order.status} to ${status}`,
-      );
+      throw new BadRequestException(`Cannot transition from ${order.status} to ${status}`);
     }
 
     const updatedOrder = await this.prisma.order.update({

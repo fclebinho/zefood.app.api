@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Delete,
-  Param,
-  Query,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -79,10 +70,7 @@ export class AdminController {
   }
 
   @Patch('orders/:id/status')
-  updateOrderStatus(
-    @Param('id') id: string,
-    @Body('status') status: string,
-  ) {
+  updateOrderStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.adminService.updateOrderStatus(id, status);
   }
 

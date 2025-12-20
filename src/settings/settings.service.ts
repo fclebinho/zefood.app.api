@@ -391,18 +391,18 @@ export class SettingsService implements OnModuleInit {
 
   // Calculate delivery fee based on distance
   async calculateDeliveryFee(distanceKm: number, orderTotal: number): Promise<number> {
-    const baseFee = await this.get<number>('delivery_base_fee') || 5;
-    const feePerKm = await this.get<number>('delivery_fee_per_km') || 1.5;
-    const minFee = await this.get<number>('delivery_min_fee') || 5;
-    const maxFee = await this.get<number>('delivery_max_fee') || 25;
-    const freeAbove = await this.get<number>('delivery_free_above') || 0;
+    const baseFee = (await this.get<number>('delivery_base_fee')) || 5;
+    const feePerKm = (await this.get<number>('delivery_fee_per_km')) || 1.5;
+    const minFee = (await this.get<number>('delivery_min_fee')) || 5;
+    const maxFee = (await this.get<number>('delivery_max_fee')) || 25;
+    const freeAbove = (await this.get<number>('delivery_free_above')) || 0;
 
     // Free delivery for orders above threshold
     if (freeAbove > 0 && orderTotal >= freeAbove) {
       return 0;
     }
 
-    let fee = baseFee + (distanceKm * feePerKm);
+    let fee = baseFee + distanceKm * feePerKm;
     fee = Math.max(fee, minFee);
     fee = Math.min(fee, maxFee);
 

@@ -146,7 +146,10 @@ export class AdminService {
     };
   }
 
-  async updateRestaurantStatus(id: string, status: 'ACTIVE' | 'SUSPENDED' | 'PENDING' | 'INACTIVE') {
+  async updateRestaurantStatus(
+    id: string,
+    status: 'ACTIVE' | 'SUSPENDED' | 'PENDING' | 'INACTIVE',
+  ) {
     return this.prisma.restaurant.update({
       where: { id },
       data: { status: status as RestaurantStatus },
@@ -154,12 +157,7 @@ export class AdminService {
   }
 
   // Order Management
-  async getOrders(params: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    search?: string;
-  }) {
+  async getOrders(params: { page?: number; limit?: number; status?: string; search?: string }) {
     const { page = 1, limit = 10, status, search } = params;
     const skip = (page - 1) * limit;
 
@@ -232,12 +230,7 @@ export class AdminService {
   }
 
   // Driver Management
-  async getDrivers(params: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    search?: string;
-  }) {
+  async getDrivers(params: { page?: number; limit?: number; status?: string; search?: string }) {
     const { page = 1, limit = 10, status, search } = params;
     const skip = (page - 1) * limit;
 
@@ -292,12 +285,7 @@ export class AdminService {
   }
 
   // User Management
-  async getUsers(params: {
-    page?: number;
-    limit?: number;
-    role?: string;
-    search?: string;
-  }) {
+  async getUsers(params: { page?: number; limit?: number; role?: string; search?: string }) {
     const { page = 1, limit = 10, role, search } = params;
     const skip = (page - 1) * limit;
 

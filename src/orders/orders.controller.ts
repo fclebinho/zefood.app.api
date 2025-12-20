@@ -1,14 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Param,
-  Body,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -23,10 +14,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  async create(
-    @CurrentUser('sub') userId: string,
-    @Body() createOrderDto: CreateOrderDto,
-  ) {
+  async create(@CurrentUser('sub') userId: string, @Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(userId, createOrderDto);
   }
 
@@ -44,10 +32,7 @@ export class OrdersController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @CurrentUser('sub') userId: string,
-  ) {
+  async findOne(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     return this.ordersService.findById(id, userId);
   }
 
@@ -58,11 +43,6 @@ export class OrdersController {
     @CurrentUser('role') role: string,
     @Body() updateStatusDto: UpdateOrderStatusDto,
   ) {
-    return this.ordersService.updateStatus(
-      id,
-      updateStatusDto.status,
-      userId,
-      role,
-    );
+    return this.ordersService.updateStatus(id, updateStatusDto.status, userId, role);
   }
 }

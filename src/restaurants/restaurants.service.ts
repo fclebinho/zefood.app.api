@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { RestaurantStatus, OrderStatus } from '@prisma/client';
@@ -182,7 +178,8 @@ export class RestaurantsService {
     const updateData: Record<string, unknown> = {};
 
     if (restaurantData.name) updateData.name = restaurantData.name;
-    if (restaurantData.description !== undefined) updateData.description = restaurantData.description;
+    if (restaurantData.description !== undefined)
+      updateData.description = restaurantData.description;
     if (restaurantData.phone !== undefined) updateData.phone = restaurantData.phone;
     if (restaurantData.email !== undefined) updateData.email = restaurantData.email;
     if (restaurantData.street) updateData.street = restaurantData.street;
@@ -192,10 +189,14 @@ export class RestaurantsService {
     if (restaurantData.city) updateData.city = restaurantData.city;
     if (restaurantData.state) updateData.state = restaurantData.state;
     if (restaurantData.zipCode) updateData.zipCode = restaurantData.zipCode;
-    if (restaurantData.deliveryFee !== undefined) updateData.deliveryFee = restaurantData.deliveryFee;
-    if (restaurantData.minOrderValue !== undefined) updateData.minOrderValue = restaurantData.minOrderValue;
-    if (restaurantData.avgPrepTime !== undefined) updateData.avgPrepTime = restaurantData.avgPrepTime;
-    if (restaurantData.deliveryRadius !== undefined) updateData.deliveryRadius = restaurantData.deliveryRadius;
+    if (restaurantData.deliveryFee !== undefined)
+      updateData.deliveryFee = restaurantData.deliveryFee;
+    if (restaurantData.minOrderValue !== undefined)
+      updateData.minOrderValue = restaurantData.minOrderValue;
+    if (restaurantData.avgPrepTime !== undefined)
+      updateData.avgPrepTime = restaurantData.avgPrepTime;
+    if (restaurantData.deliveryRadius !== undefined)
+      updateData.deliveryRadius = restaurantData.deliveryRadius;
     if (restaurantData.isOpen !== undefined) updateData.isOpen = restaurantData.isOpen;
 
     if (openingHours && openingHours.length > 0) {
@@ -271,7 +272,7 @@ export class RestaurantsService {
       where.status = status;
     }
 
-    const [orders, total] = await Promise.all([
+    const [orders] = await Promise.all([
       this.prisma.order.findMany({
         where,
         include: {
@@ -349,11 +350,7 @@ export class RestaurantsService {
     });
   }
 
-  async updateMenuCategory(
-    userId: string,
-    categoryId: string,
-    dto: UpdateMenuCategoryDto,
-  ) {
+  async updateMenuCategory(userId: string, categoryId: string, dto: UpdateMenuCategoryDto) {
     const restaurantId = await this.getRestaurantIdByUserId(userId);
 
     const category = await this.prisma.menuCategory.findFirst({

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -113,10 +109,7 @@ export class AuthService {
 
     // Geocode address asynchronously in background (fire and forget)
     if (user.addresses.length > 0) {
-      this.geocodingService.geocodeAddressAsync(
-        user.addresses[0].id,
-        user.addresses[0].zipCode,
-      );
+      this.geocodingService.geocodeAddressAsync(user.addresses[0].id, user.addresses[0].zipCode);
     }
 
     return this.login({
@@ -203,10 +196,7 @@ export class AuthService {
     });
 
     // Geocode restaurant address asynchronously
-    this.geocodingService.geocodeRestaurantAsync(
-      result.restaurant.id,
-      registerDto.zipCode,
-    );
+    this.geocodingService.geocodeRestaurantAsync(result.restaurant.id, registerDto.zipCode);
 
     return this.login({
       id: result.user.id,
@@ -271,19 +261,13 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  private async generateTokens(user: {
-    id: string;
-    email: string;
-    role: UserRole;
-  }) {
+  private async generateTokens(user: { id: string; email: string; role: UserRole }) {
     const payload = { sub: user.id, email: user.email, role: user.role };
 
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret:
-        this.configService.get<string>('JWT_REFRESH_SECRET') ||
-        'refresh-secret-key',
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret-key',
       expiresIn: 604800, // 7 days in seconds
     });
 

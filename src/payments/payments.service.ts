@@ -94,7 +94,8 @@ export class PaymentsService {
   async initializeStripe(): Promise<boolean> {
     try {
       // Primeiro tenta buscar do banco de dados
-      let stripeKey: string | null | undefined = await this.settingsService.get<string>('stripe_secret_key');
+      let stripeKey: string | null | undefined =
+        await this.settingsService.get<string>('stripe_secret_key');
 
       // Fallback para variável de ambiente
       if (!stripeKey) {
@@ -125,7 +126,9 @@ export class PaymentsService {
   async initializeMercadoPago(): Promise<boolean> {
     try {
       // Primeiro tenta buscar do banco de dados
-      let mpToken: string | null | undefined = await this.settingsService.get<string>('mercadopago_access_token');
+      let mpToken: string | null | undefined = await this.settingsService.get<string>(
+        'mercadopago_access_token',
+      );
 
       // Fallback para variável de ambiente
       if (!mpToken) {
@@ -169,8 +172,8 @@ export class PaymentsService {
     stripe: { configured: boolean; enabled: boolean };
     mercadopago: { configured: boolean; enabled: boolean };
   }> {
-    const stripeEnabled = await this.settingsService.get<boolean>('stripe_enabled') ?? true;
-    const mpEnabled = await this.settingsService.get<boolean>('mercadopago_enabled') ?? true;
+    const stripeEnabled = (await this.settingsService.get<boolean>('stripe_enabled')) ?? true;
+    const mpEnabled = (await this.settingsService.get<boolean>('mercadopago_enabled')) ?? true;
 
     return {
       stripe: {
@@ -193,11 +196,12 @@ export class PaymentsService {
 
   async getAvailablePaymentMethods() {
     // Get settings for enabled gateways
-    const pixEnabled = await this.settingsService.get<boolean>('pix_enabled') ?? true;
-    const cardEnabled = await this.settingsService.get<boolean>('card_enabled') ?? true;
-    const cashEnabled = await this.settingsService.get<boolean>('cash_enabled') ?? true;
-    const stripeEnabled = await this.settingsService.get<boolean>('stripe_enabled') ?? true;
-    const mercadopagoEnabled = await this.settingsService.get<boolean>('mercadopago_enabled') ?? true;
+    const pixEnabled = (await this.settingsService.get<boolean>('pix_enabled')) ?? true;
+    const cardEnabled = (await this.settingsService.get<boolean>('card_enabled')) ?? true;
+    const cashEnabled = (await this.settingsService.get<boolean>('cash_enabled')) ?? true;
+    const stripeEnabled = (await this.settingsService.get<boolean>('stripe_enabled')) ?? true;
+    const mercadopagoEnabled =
+      (await this.settingsService.get<boolean>('mercadopago_enabled')) ?? true;
 
     // Card payment is available if gateway is configured AND enabled in settings
     const stripeAvailable = !!this.stripe && stripeEnabled;
@@ -307,7 +311,9 @@ export class PaymentsService {
     amount: number,
   ): Promise<PaymentResult> {
     this.logger.log(`Processing card payment for order ${order.id}, amount: ${amount}`);
-    this.logger.log(`Card data present: ${!!dto.cardData}, Card token present: ${!!dto.cardToken}, Saved card: ${!!dto.savedCardId}`);
+    this.logger.log(
+      `Card data present: ${!!dto.cardData}, Card token present: ${!!dto.cardToken}, Saved card: ${!!dto.savedCardId}`,
+    );
 
     // If using a saved card, check the provider and delegate accordingly
     if (dto.savedCardId) {
@@ -323,7 +329,12 @@ export class PaymentsService {
       if (savedCard.provider === CardProvider.STRIPE) {
         return this.processPaymentWithStripeCard(order, dto.savedCardId, amount);
       } else {
-        return this.processPaymentWithSavedCard(order, dto.savedCardId, dto.securityCode || '', amount);
+        return this.processPaymentWithSavedCard(
+          order,
+          dto.savedCardId,
+          dto.securityCode || '',
+          amount,
+        );
       }
     }
 
@@ -352,10 +363,12 @@ export class PaymentsService {
           payment_method_id: cardBrand,
           payer: {
             email: order.customer?.user?.email || 'customer@zefood.com',
-            identification: dto.cardData ? {
-              type: dto.cardData.identificationType || 'CPF',
-              number: dto.cardData.identificationNumber,
-            } : undefined,
+            identification: dto.cardData
+              ? {
+                  type: dto.cardData.identificationType || 'CPF',
+                  number: dto.cardData.identificationNumber,
+                }
+              : undefined,
           },
           metadata: {
             order_id: order.id,
@@ -369,12 +382,15 @@ export class PaymentsService {
 
           // First, get the correct payment_method_id from MercadoPago BIN API
           this.logger.log(`Querying MercadoPago BIN API for: ${cardBin}`);
-          const binResponse = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?bins=${cardBin}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
+          const binResponse = await fetch(
+            `https://api.mercadopago.com/v1/payment_methods/search?bins=${cardBin}`,
+            {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
             },
-          });
+          );
 
           const binData = await binResponse.json();
           this.logger.log(`BIN API response: ${JSON.stringify(binData, null, 2)}`);
@@ -395,7 +411,7 @@ export class PaymentsService {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
+              Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
               card_number: dto.cardData.cardNumber,
@@ -407,7 +423,11 @@ export class PaymentsService {
                 },
               },
               expiration_month: parseInt(dto.cardData.expirationMonth),
-              expiration_year: parseInt(dto.cardData.expirationYear.length === 2 ? `20${dto.cardData.expirationYear}` : dto.cardData.expirationYear),
+              expiration_year: parseInt(
+                dto.cardData.expirationYear.length === 2
+                  ? `20${dto.cardData.expirationYear}`
+                  : dto.cardData.expirationYear,
+              ),
               security_code: dto.cardData.securityCode,
             }),
           });
@@ -417,22 +437,36 @@ export class PaymentsService {
           if (!tokenResponse.ok || !tokenData.id) {
             this.logger.error('Failed to create card token:', JSON.stringify(tokenData, null, 2));
             this.logger.error('Token response status:', tokenResponse.status);
-            this.logger.error('Token request body:', JSON.stringify({
-              card_number: dto.cardData.cardNumber ? `${dto.cardData.cardNumber.substring(0, 6)}****` : 'missing',
-              cardholder_name: dto.cardData.cardholderName,
-              identification_type: dto.cardData.identificationType,
-              identification_number: dto.cardData.identificationNumber,
-              expiration_month: dto.cardData.expirationMonth,
-              expiration_year: dto.cardData.expirationYear,
-            }, null, 2));
+            this.logger.error(
+              'Token request body:',
+              JSON.stringify(
+                {
+                  card_number: dto.cardData.cardNumber
+                    ? `${dto.cardData.cardNumber.substring(0, 6)}****`
+                    : 'missing',
+                  cardholder_name: dto.cardData.cardholderName,
+                  identification_type: dto.cardData.identificationType,
+                  identification_number: dto.cardData.identificationNumber,
+                  expiration_month: dto.cardData.expirationMonth,
+                  expiration_year: dto.cardData.expirationYear,
+                },
+                null,
+                2,
+              ),
+            );
 
             // Return more detailed error
-            const errorMessage = tokenData.cause?.[0]?.description || tokenData.message || 'Erro ao processar dados do cartão';
+            const errorMessage =
+              tokenData.cause?.[0]?.description ||
+              tokenData.message ||
+              'Erro ao processar dados do cartão';
             throw new BadRequestException(errorMessage);
           }
 
           paymentBody.token = tokenData.id;
-          this.logger.log(`Card token created: ${tokenData.id}, using payment_method_id: ${paymentMethodId}`);
+          this.logger.log(
+            `Card token created: ${tokenData.id}, using payment_method_id: ${paymentMethodId}`,
+          );
         } else if (dto.cardToken) {
           // Use pre-generated token
           paymentBody.token = dto.cardToken;
@@ -531,37 +565,254 @@ export class PaymentsService {
 
     // Elo - extensive BIN ranges (must check before Visa/Master due to overlaps)
     const eloBins = [
-      '401178', '401179', '431274', '438935', '451416', '457393', '457631', '457632',
-      '504175', '506699', '506700', '506701', '506702', '506703', '506704', '506705',
-      '506706', '506707', '506708', '506709', '506710', '506711', '506712', '506713',
-      '506714', '506715', '506716', '506717', '506718', '506719', '506720', '506721',
-      '506722', '506723', '506724', '506725', '506726', '506727', '506728', '506729',
-      '506730', '506731', '506732', '506733', '506734', '506735', '506736', '506737',
-      '506738', '506739', '506740', '506741', '506742', '506743', '506744', '506745',
-      '506746', '506747', '506748', '506749', '506750', '506751', '506752', '506753',
-      '506754', '506755', '506756', '506757', '506758', '506759', '506760', '506761',
-      '506762', '506763', '506764', '506765', '506766', '506767', '506768', '506769',
-      '506770', '506771', '506772', '506773', '506774', '506775', '506776', '506777',
-      '506778', '509000', '509001', '509002', '509003', '509004', '509005', '509006',
-      '509007', '509008', '509009', '509010', '509011', '509012', '509013', '509014',
-      '509015', '509016', '509017', '509018', '509019', '509020', '509021', '509022',
-      '509023', '509024', '509025', '509026', '509027', '509028', '509029', '509030',
-      '509031', '509032', '509033', '509034', '509035', '509036', '509037', '509038',
-      '509039', '509040', '509041', '509042', '509043', '509044', '509045', '509046',
-      '509047', '509048', '509049', '509050', '509051', '509052', '509053', '509054',
-      '509055', '509056', '509057', '509058', '509059', '509060', '509061', '509062',
-      '509063', '509064', '509065', '509066', '509067', '509068', '509069', '509070',
-      '509071', '509072', '509073', '509074', '509075', '509076', '509077', '509078',
-      '509079', '509080', '509081', '509082', '509083', '509084', '509085', '509086',
-      '509087', '509088', '509089', '509090', '509091', '509092', '509093', '509094',
-      '509095', '509096', '509097', '509098', '509099', '627780', '636297', '636368',
-      '650031', '650032', '650033', '650034', '650035', '650036', '650037', '650038',
-      '650039', '650040', '650041', '650042', '650043', '650044', '650045', '650046',
-      '650047', '650048', '650049', '650050', '650051', '650052', '650053', '650054',
-      '650055', '650056', '650057', '650058', '650059', '650060', '650061', '650062',
-      '650063', '650064', '650065', '650066', '650067', '650068', '650069', '650070',
-      '650071', '650072', '650073', '650074', '650075', '650076', '650077', '650078',
-      '655000', '655001', '655002', '655003', '655004', '655005', '655006', '655007',
+      '401178',
+      '401179',
+      '431274',
+      '438935',
+      '451416',
+      '457393',
+      '457631',
+      '457632',
+      '504175',
+      '506699',
+      '506700',
+      '506701',
+      '506702',
+      '506703',
+      '506704',
+      '506705',
+      '506706',
+      '506707',
+      '506708',
+      '506709',
+      '506710',
+      '506711',
+      '506712',
+      '506713',
+      '506714',
+      '506715',
+      '506716',
+      '506717',
+      '506718',
+      '506719',
+      '506720',
+      '506721',
+      '506722',
+      '506723',
+      '506724',
+      '506725',
+      '506726',
+      '506727',
+      '506728',
+      '506729',
+      '506730',
+      '506731',
+      '506732',
+      '506733',
+      '506734',
+      '506735',
+      '506736',
+      '506737',
+      '506738',
+      '506739',
+      '506740',
+      '506741',
+      '506742',
+      '506743',
+      '506744',
+      '506745',
+      '506746',
+      '506747',
+      '506748',
+      '506749',
+      '506750',
+      '506751',
+      '506752',
+      '506753',
+      '506754',
+      '506755',
+      '506756',
+      '506757',
+      '506758',
+      '506759',
+      '506760',
+      '506761',
+      '506762',
+      '506763',
+      '506764',
+      '506765',
+      '506766',
+      '506767',
+      '506768',
+      '506769',
+      '506770',
+      '506771',
+      '506772',
+      '506773',
+      '506774',
+      '506775',
+      '506776',
+      '506777',
+      '506778',
+      '509000',
+      '509001',
+      '509002',
+      '509003',
+      '509004',
+      '509005',
+      '509006',
+      '509007',
+      '509008',
+      '509009',
+      '509010',
+      '509011',
+      '509012',
+      '509013',
+      '509014',
+      '509015',
+      '509016',
+      '509017',
+      '509018',
+      '509019',
+      '509020',
+      '509021',
+      '509022',
+      '509023',
+      '509024',
+      '509025',
+      '509026',
+      '509027',
+      '509028',
+      '509029',
+      '509030',
+      '509031',
+      '509032',
+      '509033',
+      '509034',
+      '509035',
+      '509036',
+      '509037',
+      '509038',
+      '509039',
+      '509040',
+      '509041',
+      '509042',
+      '509043',
+      '509044',
+      '509045',
+      '509046',
+      '509047',
+      '509048',
+      '509049',
+      '509050',
+      '509051',
+      '509052',
+      '509053',
+      '509054',
+      '509055',
+      '509056',
+      '509057',
+      '509058',
+      '509059',
+      '509060',
+      '509061',
+      '509062',
+      '509063',
+      '509064',
+      '509065',
+      '509066',
+      '509067',
+      '509068',
+      '509069',
+      '509070',
+      '509071',
+      '509072',
+      '509073',
+      '509074',
+      '509075',
+      '509076',
+      '509077',
+      '509078',
+      '509079',
+      '509080',
+      '509081',
+      '509082',
+      '509083',
+      '509084',
+      '509085',
+      '509086',
+      '509087',
+      '509088',
+      '509089',
+      '509090',
+      '509091',
+      '509092',
+      '509093',
+      '509094',
+      '509095',
+      '509096',
+      '509097',
+      '509098',
+      '509099',
+      '627780',
+      '636297',
+      '636368',
+      '650031',
+      '650032',
+      '650033',
+      '650034',
+      '650035',
+      '650036',
+      '650037',
+      '650038',
+      '650039',
+      '650040',
+      '650041',
+      '650042',
+      '650043',
+      '650044',
+      '650045',
+      '650046',
+      '650047',
+      '650048',
+      '650049',
+      '650050',
+      '650051',
+      '650052',
+      '650053',
+      '650054',
+      '650055',
+      '650056',
+      '650057',
+      '650058',
+      '650059',
+      '650060',
+      '650061',
+      '650062',
+      '650063',
+      '650064',
+      '650065',
+      '650066',
+      '650067',
+      '650068',
+      '650069',
+      '650070',
+      '650071',
+      '650072',
+      '650073',
+      '650074',
+      '650075',
+      '650076',
+      '650077',
+      '650078',
+      '655000',
+      '655001',
+      '655002',
+      '655003',
+      '655004',
+      '655005',
+      '655006',
+      '655007',
     ];
 
     // Check Elo by exact BIN match
@@ -614,20 +865,20 @@ export class PaymentsService {
 
   private translateMercadoPagoError(statusDetail: string): string {
     const errorMessages: Record<string, string> = {
-      'cc_rejected_bad_filled_card_number': 'Número do cartão inválido',
-      'cc_rejected_bad_filled_date': 'Data de validade inválida',
-      'cc_rejected_bad_filled_other': 'Dados do cartão inválidos',
-      'cc_rejected_bad_filled_security_code': 'Código de segurança inválido',
-      'cc_rejected_blacklist': 'Cartão não permitido',
-      'cc_rejected_call_for_authorize': 'Pagamento não autorizado. Contate sua operadora.',
-      'cc_rejected_card_disabled': 'Cartão desabilitado. Contate sua operadora.',
-      'cc_rejected_card_error': 'Erro no cartão. Tente novamente.',
-      'cc_rejected_duplicated_payment': 'Pagamento duplicado',
-      'cc_rejected_high_risk': 'Pagamento recusado por segurança',
-      'cc_rejected_insufficient_amount': 'Saldo insuficiente',
-      'cc_rejected_invalid_installments': 'Parcelamento não disponível',
-      'cc_rejected_max_attempts': 'Limite de tentativas excedido',
-      'cc_rejected_other_reason': 'Pagamento recusado pela operadora',
+      cc_rejected_bad_filled_card_number: 'Número do cartão inválido',
+      cc_rejected_bad_filled_date: 'Data de validade inválida',
+      cc_rejected_bad_filled_other: 'Dados do cartão inválidos',
+      cc_rejected_bad_filled_security_code: 'Código de segurança inválido',
+      cc_rejected_blacklist: 'Cartão não permitido',
+      cc_rejected_call_for_authorize: 'Pagamento não autorizado. Contate sua operadora.',
+      cc_rejected_card_disabled: 'Cartão desabilitado. Contate sua operadora.',
+      cc_rejected_card_error: 'Erro no cartão. Tente novamente.',
+      cc_rejected_duplicated_payment: 'Pagamento duplicado',
+      cc_rejected_high_risk: 'Pagamento recusado por segurança',
+      cc_rejected_insufficient_amount: 'Saldo insuficiente',
+      cc_rejected_invalid_installments: 'Parcelamento não disponível',
+      cc_rejected_max_attempts: 'Limite de tentativas excedido',
+      cc_rejected_other_reason: 'Pagamento recusado pela operadora',
     };
 
     return errorMessages[statusDetail] || 'Pagamento recusado. Tente novamente.';
@@ -786,7 +1037,17 @@ export class PaymentsService {
     const payloadFormat = formatField('00', '01');
 
     // Build payload without CRC
-    const payloadWithoutCRC = payloadFormat + merchantAccount + mcc + currency + amount + country + merchantName + city + additionalData + '6304';
+    const payloadWithoutCRC =
+      payloadFormat +
+      merchantAccount +
+      mcc +
+      currency +
+      amount +
+      country +
+      merchantName +
+      city +
+      additionalData +
+      '6304';
 
     // Calculate CRC16
     const crc = this.calculateCRC16(payloadWithoutCRC);
@@ -795,7 +1056,7 @@ export class PaymentsService {
   }
 
   private calculateCRC16(payload: string): string {
-    let crc = 0xFFFF;
+    let crc = 0xffff;
     const polynomial = 0x1021;
 
     for (let i = 0; i < payload.length; i++) {
@@ -806,7 +1067,7 @@ export class PaymentsService {
         } else {
           crc <<= 1;
         }
-        crc &= 0xFFFF;
+        crc &= 0xffff;
       }
     }
 
@@ -814,7 +1075,10 @@ export class PaymentsService {
   }
 
   // Stripe Payment Intent creation for frontend
-  async createStripePaymentIntent(orderId: string, userId: string): Promise<{ clientSecret: string }> {
+  async createStripePaymentIntent(
+    orderId: string,
+    userId: string,
+  ): Promise<{ clientSecret: string }> {
     if (!this.stripe) {
       throw new BadRequestException('Stripe not configured');
     }
@@ -854,7 +1118,10 @@ export class PaymentsService {
   }
 
   // MercadoPago Preference creation for Checkout Pro
-  async createMercadoPagoPreference(orderId: string, userId: string): Promise<{ preferenceId: string; initPoint: string }> {
+  async createMercadoPagoPreference(
+    orderId: string,
+    userId: string,
+  ): Promise<{ preferenceId: string; initPoint: string }> {
     if (!this.mercadopago) {
       throw new BadRequestException('MercadoPago not configured');
     }
@@ -883,7 +1150,7 @@ export class PaymentsService {
 
     const result = await preference.create({
       body: {
-        items: order.items.map(item => ({
+        items: order.items.map((item) => ({
           id: item.id,
           title: item.menuItem.name,
           quantity: item.quantity,
@@ -1073,16 +1340,18 @@ export class PaymentsService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           email: customer.user.email,
           first_name: customer.fullName?.split(' ')[0] || 'Customer',
           last_name: customer.fullName?.split(' ').slice(1).join(' ') || '',
-          identification: customer.cpf ? {
-            type: 'CPF',
-            number: customer.cpf,
-          } : undefined,
+          identification: customer.cpf
+            ? {
+                type: 'CPF',
+                number: customer.cpf,
+              }
+            : undefined,
         }),
       });
 
@@ -1090,13 +1359,16 @@ export class PaymentsService {
 
       if (!response.ok) {
         // Check if customer already exists with this email
-        if (data.cause?.[0]?.code === 'customer_already_exists' || data.message?.includes('already exists')) {
+        if (
+          data.cause?.[0]?.code === 'customer_already_exists' ||
+          data.message?.includes('already exists')
+        ) {
           // Search for existing customer
           const searchResponse = await fetch(
             `https://api.mercadopago.com/v1/customers/search?email=${encodeURIComponent(customer.user.email)}`,
             {
-              headers: { 'Authorization': `Bearer ${accessToken}` },
-            }
+              headers: { Authorization: `Bearer ${accessToken}` },
+            },
           );
           const searchData = await searchResponse.json();
 
@@ -1141,7 +1413,7 @@ export class PaymentsService {
       return [];
     }
 
-    return customer.savedCards.map(card => ({
+    return customer.savedCards.map((card) => ({
       id: card.id,
       provider: card.provider,
       mpCardId: card.mpCardId || undefined,
@@ -1181,7 +1453,7 @@ export class PaymentsService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           card_number: cardData.cardNumber.replace(/\s/g, ''),
@@ -1193,7 +1465,11 @@ export class PaymentsService {
             },
           },
           expiration_month: parseInt(cardData.expirationMonth),
-          expiration_year: parseInt(cardData.expirationYear.length === 2 ? `20${cardData.expirationYear}` : cardData.expirationYear),
+          expiration_year: parseInt(
+            cardData.expirationYear.length === 2
+              ? `20${cardData.expirationYear}`
+              : cardData.expirationYear,
+          ),
           security_code: cardData.securityCode,
         }),
       });
@@ -1201,20 +1477,25 @@ export class PaymentsService {
       const tokenData = await tokenResponse.json();
       if (!tokenResponse.ok || !tokenData.id) {
         this.logger.error('Failed to create card token for saving:', tokenData);
-        throw new BadRequestException(tokenData.cause?.[0]?.description || 'Erro ao processar dados do cartão');
+        throw new BadRequestException(
+          tokenData.cause?.[0]?.description || 'Erro ao processar dados do cartão',
+        );
       }
 
       // Now add the card to the customer
-      const cardResponse = await fetch(`https://api.mercadopago.com/v1/customers/${mpCustomerId}/cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+      const cardResponse = await fetch(
+        `https://api.mercadopago.com/v1/customers/${mpCustomerId}/cards`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            token: tokenData.id,
+          }),
         },
-        body: JSON.stringify({
-          token: tokenData.id,
-        }),
-      });
+      );
 
       const mpCardData = await cardResponse.json();
       if (!cardResponse.ok || !mpCardData.id) {
@@ -1243,7 +1524,9 @@ export class PaymentsService {
         },
       });
 
-      this.logger.log(`Saved card ${savedCard.id} (MP: ${mpCardData.id}) for customer ${customer.id}`);
+      this.logger.log(
+        `Saved card ${savedCard.id} (MP: ${mpCardData.id}) for customer ${customer.id}`,
+      );
 
       return {
         id: savedCard.id,
@@ -1291,10 +1574,13 @@ export class PaymentsService {
     // Delete from MercadoPago if we have customer ID
     if (customer.mpCustomerId && accessToken) {
       try {
-        await fetch(`https://api.mercadopago.com/v1/customers/${customer.mpCustomerId}/cards/${savedCard.mpCardId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${accessToken}` },
-        });
+        await fetch(
+          `https://api.mercadopago.com/v1/customers/${customer.mpCustomerId}/cards/${savedCard.mpCardId}`,
+          {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        );
       } catch (error) {
         this.logger.warn('Failed to delete card from MP:', error);
         // Continue anyway - delete from our DB
@@ -1502,7 +1788,9 @@ export class PaymentsService {
    * Create a SetupIntent for saving a card with Stripe
    * Frontend uses this to collect card details securely
    */
-  async createStripeSetupIntent(userId: string): Promise<{ clientSecret: string; customerId: string }> {
+  async createStripeSetupIntent(
+    userId: string,
+  ): Promise<{ clientSecret: string; customerId: string }> {
     if (!this.stripe) {
       throw new BadRequestException('Stripe não configurado');
     }
@@ -1516,7 +1804,9 @@ export class PaymentsService {
         usage: 'off_session', // Allows charging without user present
       });
 
-      this.logger.log(`Created Stripe SetupIntent ${setupIntent.id} for customer ${stripeCustomerId}`);
+      this.logger.log(
+        `Created Stripe SetupIntent ${setupIntent.id} for customer ${stripeCustomerId}`,
+      );
 
       return {
         clientSecret: setupIntent.client_secret!,
@@ -1574,7 +1864,9 @@ export class PaymentsService {
         },
       });
 
-      this.logger.log(`Saved Stripe card ${savedCard.id} (PM: ${paymentMethodId}) for customer ${customer.id}`);
+      this.logger.log(
+        `Saved Stripe card ${savedCard.id} (PM: ${paymentMethodId}) for customer ${customer.id}`,
+      );
 
       return {
         id: savedCard.id,
@@ -1668,10 +1960,14 @@ export class PaymentsService {
 
       // Handle specific Stripe errors
       if (error.code === 'authentication_required') {
-        throw new BadRequestException('Autenticação adicional necessária. Tente pagar com o cartão novamente.');
+        throw new BadRequestException(
+          'Autenticação adicional necessária. Tente pagar com o cartão novamente.',
+        );
       }
 
-      throw new BadRequestException(error.message || 'Erro ao processar pagamento com cartão salvo');
+      throw new BadRequestException(
+        error.message || 'Erro ao processar pagamento com cartão salvo',
+      );
     }
   }
 
@@ -1764,7 +2060,9 @@ export class PaymentsService {
 
       if (order) {
         this.ordersGateway.emitNewOrder(order);
-        this.logger.log(`Notified restaurant ${order.restaurantId} about new paid order ${orderId}`);
+        this.logger.log(
+          `Notified restaurant ${order.restaurantId} about new paid order ${orderId}`,
+        );
       }
     } catch (error) {
       this.logger.error(`Failed to notify restaurant about order ${orderId}:`, error);

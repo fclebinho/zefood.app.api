@@ -1,13 +1,5 @@
-import {
-  Controller,
-  Get,
-  Put,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -60,10 +52,7 @@ export class SettingsController {
   @Put(':key')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async updateSetting(
-    @Param('key') key: string,
-    @Body() dto: UpdateSettingDto,
-  ) {
+  async updateSetting(@Param('key') key: string, @Body() dto: UpdateSettingDto) {
     return this.settingsService.update(key, dto.value);
   }
 
@@ -77,10 +66,7 @@ export class SettingsController {
 
   // Public endpoint - calculate delivery fee
   @Get('delivery-fee')
-  async calculateDeliveryFee(
-    @Query('distance') distance: string,
-    @Query('total') total: string,
-  ) {
+  async calculateDeliveryFee(@Query('distance') distance: string, @Query('total') total: string) {
     const distanceKm = parseFloat(distance) || 0;
     const orderTotal = parseFloat(total) || 0;
     const fee = await this.settingsService.calculateDeliveryFee(distanceKm, orderTotal);

@@ -99,10 +99,7 @@ export class RestaurantsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('RESTAURANT')
   @ApiOperation({ summary: 'Get restaurant reports and statistics' })
-  async getReports(
-    @CurrentUser('sub') userId: string,
-    @Query('period') period?: string,
-  ) {
+  async getReports(@CurrentUser('sub') userId: string, @Query('period') period?: string) {
     return this.restaurantsService.getReports(userId, period || 'week');
   }
 
@@ -157,10 +154,7 @@ export class RestaurantsController {
   @Delete('my/menu-categories/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('RESTAURANT')
-  async deleteMenuCategory(
-    @CurrentUser('sub') userId: string,
-    @Param('id') categoryId: string,
-  ) {
+  async deleteMenuCategory(@CurrentUser('sub') userId: string, @Param('id') categoryId: string) {
     return this.restaurantsService.deleteMenuCategory(userId, categoryId);
   }
 
@@ -179,10 +173,7 @@ export class RestaurantsController {
   @Post('my/menu-items')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('RESTAURANT')
-  async createMenuItem(
-    @CurrentUser('sub') userId: string,
-    @Body() createDto: CreateMenuItemDto,
-  ) {
+  async createMenuItem(@CurrentUser('sub') userId: string, @Body() createDto: CreateMenuItemDto) {
     return this.restaurantsService.createMenuItem(userId, createDto);
   }
 
@@ -210,10 +201,7 @@ export class RestaurantsController {
   @Delete('my/menu-items/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('RESTAURANT')
-  async deleteMenuItem(
-    @CurrentUser('sub') userId: string,
-    @Param('id') itemId: string,
-  ) {
+  async deleteMenuItem(@CurrentUser('sub') userId: string, @Param('id') itemId: string) {
     return this.restaurantsService.deleteMenuItem(userId, itemId);
   }
 }

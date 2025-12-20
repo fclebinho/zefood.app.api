@@ -18,7 +18,7 @@ import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { PaymentsService, CreatePaymentDto } from './payments.service';
+import { PaymentsService } from './payments.service';
 import { PaymentMethod } from '@prisma/client';
 
 class CardDataDto {
@@ -198,10 +198,7 @@ export class PaymentsController {
   @Post('stripe/confirm-card')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async confirmStripeCard(
-    @Body() dto: { paymentMethodId: string },
-    @Request() req: any,
-  ) {
+  async confirmStripeCard(@Body() dto: { paymentMethodId: string }, @Request() req: any) {
     return this.paymentsService.confirmStripeCardSaved(req.user.sub, dto.paymentMethodId);
   }
 

@@ -19,10 +19,7 @@ export class UsersController {
   }
 
   @Patch('me')
-  async updateProfile(
-    @CurrentUser('sub') userId: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  async updateProfile(@CurrentUser('sub') userId: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(userId, updateUserDto);
   }
 
@@ -49,18 +46,12 @@ export class UsersController {
   }
 
   @Delete('addresses/:id')
-  async deleteAddress(
-    @CurrentUser('sub') userId: string,
-    @Param('id') addressId: string,
-  ) {
+  async deleteAddress(@CurrentUser('sub') userId: string, @Param('id') addressId: string) {
     return this.usersService.deleteAddress(userId, addressId);
   }
 
   @Patch('addresses/:id/default')
-  async setDefaultAddress(
-    @CurrentUser('sub') userId: string,
-    @Param('id') addressId: string,
-  ) {
+  async setDefaultAddress(@CurrentUser('sub') userId: string, @Param('id') addressId: string) {
     return this.usersService.setDefaultAddress(userId, addressId);
   }
 }

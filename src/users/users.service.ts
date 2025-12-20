@@ -45,13 +45,14 @@ export class UsersService {
       where: { id: user.id },
       data: {
         phone: updateUserDto.phone,
-        customer: user.customer && fullName
-          ? {
-              update: {
-                fullName,
-              },
-            }
-          : undefined,
+        customer:
+          user.customer && fullName
+            ? {
+                update: {
+                  fullName,
+                },
+              }
+            : undefined,
       },
       include: {
         customer: true,

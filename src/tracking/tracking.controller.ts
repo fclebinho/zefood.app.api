@@ -6,12 +6,14 @@ import {
   Param,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TrackingService } from './tracking.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 
 class UpdateLocationDto {
   latitude: number;
@@ -26,7 +28,10 @@ class UpdateLocationDto {
 @Controller('tracking')
 @UseGuards(JwtAuthGuard)
 export class TrackingController {
-  constructor(private readonly trackingService: TrackingService) {}
+  constructor(
+    private readonly trackingService: TrackingService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // Driver updates their location
   @Post('location')
@@ -59,15 +64,11 @@ export class TrackingController {
   }
 
   private async getDriverFromUser(userId: string) {
-    // This would normally be in a service
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    const driver = await prisma.driver.findUnique({
+    const driver = await this.prisma.driver.findUnique({
       where: { userId },
     });
-    await prisma.$disconnect();
     if (!driver) {
-      throw new Error('Driver not found');
+      throw new NotFoundException('Driver not found');
     }
     return driver;
   }

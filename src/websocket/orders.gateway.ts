@@ -34,10 +34,7 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Customer joins their order room
   @SubscribeMessage('joinOrder')
-  handleJoinOrder(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() orderId: string,
-  ) {
+  handleJoinOrder(@ConnectedSocket() client: Socket, @MessageBody() orderId: string) {
     client.join(`order:${orderId}`);
     this.logger.log(`Client ${client.id} joined order:${orderId}`);
     return { event: 'joined', data: { orderId } };
@@ -45,10 +42,7 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Customer leaves order room
   @SubscribeMessage('leaveOrder')
-  handleLeaveOrder(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() orderId: string,
-  ) {
+  handleLeaveOrder(@ConnectedSocket() client: Socket, @MessageBody() orderId: string) {
     client.leave(`order:${orderId}`);
     this.logger.log(`Client ${client.id} left order:${orderId}`);
     return { event: 'left', data: { orderId } };
@@ -56,10 +50,7 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Restaurant joins their restaurant room
   @SubscribeMessage('joinRestaurant')
-  handleJoinRestaurant(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() restaurantId: string,
-  ) {
+  handleJoinRestaurant(@ConnectedSocket() client: Socket, @MessageBody() restaurantId: string) {
     client.join(`restaurant:${restaurantId}`);
     this.logger.log(`Client ${client.id} joined restaurant:${restaurantId}`);
     return { event: 'joined', data: { restaurantId } };
@@ -67,10 +58,7 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Driver joins driver room
   @SubscribeMessage('joinDriver')
-  handleJoinDriver(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() driverId: string,
-  ) {
+  handleJoinDriver(@ConnectedSocket() client: Socket, @MessageBody() driverId: string) {
     client.join(`driver:${driverId}`);
     client.join('drivers:available'); // Join available deliveries room
     this.logger.log(`Client ${client.id} joined driver:${driverId}`);

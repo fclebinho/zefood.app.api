@@ -55,10 +55,7 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // Customer subscribes to order tracking
   @SubscribeMessage('subscribeToOrder')
-  handleSubscribeToOrder(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() orderId: string,
-  ) {
+  handleSubscribeToOrder(@ConnectedSocket() client: Socket, @MessageBody() orderId: string) {
     client.join(`tracking:order:${orderId}`);
     this.logger.log(`Client ${client.id} subscribed to order tracking: ${orderId}`);
     return { event: 'subscribed', data: { orderId } };
@@ -66,10 +63,7 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // Customer unsubscribes from order tracking
   @SubscribeMessage('unsubscribeFromOrder')
-  handleUnsubscribeFromOrder(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() orderId: string,
-  ) {
+  handleUnsubscribeFromOrder(@ConnectedSocket() client: Socket, @MessageBody() orderId: string) {
     client.leave(`tracking:order:${orderId}`);
     this.logger.log(`Client ${client.id} unsubscribed from order tracking: ${orderId}`);
     return { event: 'unsubscribed', data: { orderId } };
@@ -77,10 +71,7 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // Driver registers for location updates
   @SubscribeMessage('driverConnect')
-  handleDriverConnect(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() driverId: string,
-  ) {
+  handleDriverConnect(@ConnectedSocket() client: Socket, @MessageBody() driverId: string) {
     this.driverSockets.set(driverId, client.id);
     client.join(`tracking:driver:${driverId}`);
     this.logger.log(`Driver ${driverId} connected for tracking`);
@@ -163,10 +154,7 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // Get order tracking info via REST-like socket call
   @SubscribeMessage('getOrderTracking')
-  async handleGetOrderTracking(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() orderId: string,
-  ) {
+  async handleGetOrderTracking(@ConnectedSocket() client: Socket, @MessageBody() orderId: string) {
     try {
       const tracking = await this.trackingService.getOrderTracking(orderId);
       return { event: 'orderTracking', data: tracking };

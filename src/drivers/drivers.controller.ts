@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Param,
-  Body,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { DriversService } from './drivers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -31,10 +22,7 @@ export class DriversController {
   }
 
   @Patch('status')
-  async updateStatus(
-    @CurrentUser('sub') userId: string,
-    @Body('isOnline') isOnline: boolean,
-  ) {
+  async updateStatus(@CurrentUser('sub') userId: string, @Body('isOnline') isOnline: boolean) {
     return this.driversService.updateStatus(userId, isOnline);
   }
 
@@ -56,10 +44,7 @@ export class DriversController {
   }
 
   @Post('deliveries/:orderId/accept')
-  async acceptDelivery(
-    @CurrentUser('sub') userId: string,
-    @Param('orderId') orderId: string,
-  ) {
+  async acceptDelivery(@CurrentUser('sub') userId: string, @Param('orderId') orderId: string) {
     return this.driversService.acceptDelivery(userId, orderId);
   }
 

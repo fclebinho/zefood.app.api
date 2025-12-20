@@ -42,3 +42,35 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME}}/${{env.IMAGE_NAME}}:${{ steps.get_version.outputs.VERSION }}
             ${{ secrets.DOCKER_HUB_USERNAME}}/${{env.IMAGE_NAME}}:latest
+
+  update-iac:
+    name: Update IaC
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout IaC repository 🛎️
+        uses: actions/checkout@v4
+        with:
+          repository: fclebinho/zefood.app
+          token: ${{ secrets.GH_PAT }}
+          path: iac-repo
+
+      - name: Extract version from tag 📌
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update backend image tag 🏷️
+        run: |
+          cd iac-repo
+          # Update image tags in backend.yaml
+          sed -i "s|fclebinho/zefood.app.api:.*|fclebinho/zefood.app.api:${{ steps.get_version.outputs.VERSION }}|g" iac/k3s/base/backend.yaml
+
+      - name: Commit and push changes 🚀
+        run: |
+          cd iac-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add iac/k3s/base/backend.yaml
+          git diff --staged --quiet || git commit -m "chore: update backend image to v${{ steps.get_version.outputs.VERSION }}"
+          git push

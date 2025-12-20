@@ -12,10 +12,12 @@ import {
   RawBodyRequest,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum, ValidateNested, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { PaymentsService, CreatePaymentDto } from './payments.service';
 import { PaymentMethod } from '@prisma/client';
 
@@ -201,5 +203,32 @@ export class PaymentsController {
     @Request() req: any,
   ) {
     return this.paymentsService.confirmStripeCardSaved(req.user.sub, dto.paymentMethodId);
+  }
+
+  // ==================== ADMIN ENDPOINTS ====================
+
+  @Get('admin/gateway-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obter status dos gateways de pagamento' })
+  @ApiResponse({ status: 200, description: 'Status dos gateways retornado com sucesso' })
+  async getGatewayStatus() {
+    return this.paymentsService.getGatewayStatus();
+  }
+
+  @Post('admin/reinitialize-gateways')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reinicializar gateways após atualização de configurações' })
+  @ApiResponse({ status: 200, description: 'Gateways reinicializados com sucesso' })
+  async reinitializeGateways() {
+    const result = await this.paymentsService.reinitializeGateways();
+    return {
+      success: true,
+      message: 'Gateways reinicializados',
+      status: result,
+    };
   }
 }

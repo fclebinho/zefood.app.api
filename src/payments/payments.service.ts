@@ -65,6 +65,8 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
   private stripe: Stripe | null = null;
   private mercadopago: MercadoPagoConfig | null = null;
+  private stripeSecretKey: string | null = null;
+  private mpAccessToken: string | null = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -73,21 +75,120 @@ export class PaymentsService {
     private readonly ordersGateway: OrdersGateway,
     private readonly settingsService: SettingsService,
   ) {
-    // Initialize Stripe
-    const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    if (stripeKey) {
-      this.stripe = new Stripe(stripeKey);
-      this.logger.log('Stripe initialized');
-    }
+    // Gateways são inicializados sob demanda usando configurações do banco
+    this.initializeGateways();
+  }
 
-    // Initialize MercadoPago
-    const mpAccessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
-    if (mpAccessToken) {
-      this.mercadopago = new MercadoPagoConfig({
-        accessToken: mpAccessToken,
-      });
-      this.logger.log('MercadoPago initialized');
+  /**
+   * Inicializa os gateways de pagamento usando configurações do banco de dados
+   * Fallback para variáveis de ambiente se não houver configuração no banco
+   */
+  private async initializeGateways() {
+    await this.initializeStripe();
+    await this.initializeMercadoPago();
+  }
+
+  /**
+   * Inicializa ou reinicializa o Stripe com a chave do banco ou env
+   */
+  async initializeStripe(): Promise<boolean> {
+    try {
+      // Primeiro tenta buscar do banco de dados
+      let stripeKey = await this.settingsService.get<string>('stripe_secret_key');
+
+      // Fallback para variável de ambiente
+      if (!stripeKey) {
+        stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+      }
+
+      if (stripeKey && stripeKey.trim() !== '') {
+        this.stripe = new Stripe(stripeKey);
+        this.stripeSecretKey = stripeKey;
+        this.logger.log('Stripe initialized successfully');
+        return true;
+      } else {
+        this.stripe = null;
+        this.stripeSecretKey = null;
+        this.logger.warn('Stripe not configured - no secret key found');
+        return false;
+      }
+    } catch (error) {
+      this.logger.error('Failed to initialize Stripe:', error);
+      this.stripe = null;
+      return false;
     }
+  }
+
+  /**
+   * Inicializa ou reinicializa o MercadoPago com o token do banco ou env
+   */
+  async initializeMercadoPago(): Promise<boolean> {
+    try {
+      // Primeiro tenta buscar do banco de dados
+      let mpToken = await this.settingsService.get<string>('mercadopago_access_token');
+
+      // Fallback para variável de ambiente
+      if (!mpToken) {
+        mpToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
+      }
+
+      if (mpToken && mpToken.trim() !== '') {
+        this.mercadopago = new MercadoPagoConfig({
+          accessToken: mpToken,
+        });
+        this.mpAccessToken = mpToken;
+        this.logger.log('MercadoPago initialized successfully');
+        return true;
+      } else {
+        this.mercadopago = null;
+        this.mpAccessToken = null;
+        this.logger.warn('MercadoPago not configured - no access token found');
+        return false;
+      }
+    } catch (error) {
+      this.logger.error('Failed to initialize MercadoPago:', error);
+      this.mercadopago = null;
+      return false;
+    }
+  }
+
+  /**
+   * Reinicializa todos os gateways (chamado quando configurações são atualizadas)
+   */
+  async reinitializeGateways(): Promise<{ stripe: boolean; mercadopago: boolean }> {
+    const stripeOk = await this.initializeStripe();
+    const mpOk = await this.initializeMercadoPago();
+
+    return { stripe: stripeOk, mercadopago: mpOk };
+  }
+
+  /**
+   * Retorna o status atual dos gateways
+   */
+  async getGatewayStatus(): Promise<{
+    stripe: { configured: boolean; enabled: boolean };
+    mercadopago: { configured: boolean; enabled: boolean };
+  }> {
+    const stripeEnabled = await this.settingsService.get<boolean>('stripe_enabled') ?? true;
+    const mpEnabled = await this.settingsService.get<boolean>('mercadopago_enabled') ?? true;
+
+    return {
+      stripe: {
+        configured: !!this.stripe,
+        enabled: stripeEnabled && !!this.stripe,
+      },
+      mercadopago: {
+        configured: !!this.mercadopago,
+        enabled: mpEnabled && !!this.mercadopago,
+      },
+    };
+  }
+
+  /**
+   * Obtém o token do MercadoPago para uso interno
+   */
+  getMercadoPagoAccessToken(): string | null {
+    return this.mpAccessToken;
   }
 
   async getAvailablePaymentMethods() {

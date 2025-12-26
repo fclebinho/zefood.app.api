@@ -185,7 +185,7 @@ export class PaymentsController {
 
   @Get('stripe/publishable-key')
   async getStripePublishableKey() {
-    return { publishableKey: this.paymentsService.getStripePublishableKey() };
+    return { publishableKey: await this.paymentsService.getStripePublishableKey() };
   }
 
   @Post('stripe/setup-intent')

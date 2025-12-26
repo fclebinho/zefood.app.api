@@ -377,7 +377,10 @@ export class PaymentsService {
 
         // If we have raw card data (transparent checkout)
         if (dto.cardData) {
-          const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
+          const accessToken = this.mpAccessToken;
+          if (!accessToken) {
+            throw new BadRequestException('MercadoPago não configurado');
+          }
           const cardBin = dto.cardData.cardNumber.replace(/\s/g, '').substring(0, 6);
 
           // First, get the correct payment_method_id from MercadoPago BIN API
@@ -1178,7 +1181,11 @@ export class PaymentsService {
   async handleStripeWebhook(payload: Buffer, signature: string): Promise<void> {
     if (!this.stripe) return;
 
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    // First try from database, fallback to env
+    let webhookSecret = await this.settingsService.get<string>('stripe_webhook_secret');
+    if (!webhookSecret) {
+      webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET') ?? null;
+    }
     if (!webhookSecret) {
       this.logger.warn('Stripe webhook secret not configured');
       return;
@@ -1330,7 +1337,7 @@ export class PaymentsService {
     }
 
     // Create a new MP customer
-    const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
+    const accessToken = this.mpAccessToken;
     if (!accessToken) {
       throw new BadRequestException('MercadoPago não configurado');
     }
@@ -1431,7 +1438,7 @@ export class PaymentsService {
    * Save a new card via MP Customer API
    */
   async saveCard(userId: string, cardData: CardDataInput): Promise<SavedCardDto> {
-    const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
+    const accessToken = this.mpAccessToken;
     if (!accessToken) {
       throw new BadRequestException('MercadoPago não configurado');
     }
@@ -1569,7 +1576,7 @@ export class PaymentsService {
       throw new BadRequestException('Card not found');
     }
 
-    const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
+    const accessToken = this.mpAccessToken;
 
     // Delete from MercadoPago if we have customer ID
     if (customer.mpCustomerId && accessToken) {
@@ -1678,8 +1685,7 @@ export class PaymentsService {
       throw new BadRequestException('Cartão inválido para pagamento via Mercado Pago');
     }
 
-    const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
-    if (!accessToken) {
+    if (!this.mpAccessToken) {
       throw new BadRequestException('MercadoPago não configurado');
     }
 
@@ -2034,8 +2040,15 @@ export class PaymentsService {
   /**
    * Get Stripe publishable key for frontend
    */
-  getStripePublishableKey(): string {
-    const key = this.configService.get<string>('STRIPE_PUBLISHABLE_KEY');
+  async getStripePublishableKey(): Promise<string> {
+    // First try from database settings
+    let key = await this.settingsService.get<string>('stripe_public_key');
+
+    // Fallback to env
+    if (!key) {
+      key = this.configService.get<string>('STRIPE_PUBLISHABLE_KEY') ?? null;
+    }
+
     if (!key) {
       throw new BadRequestException('Stripe não configurado');
     }

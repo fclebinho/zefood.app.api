@@ -144,6 +144,15 @@ const DEFAULT_SETTINGS = [
     isPublic: false,
   },
   {
+    key: 'stripe_webhook_secret',
+    value: '',
+    type: 'STRING',
+    category: 'payment',
+    label: 'Stripe Webhook Secret',
+    description: 'Chave secreta para validar webhooks do Stripe',
+    isPublic: false,
+  },
+  {
     key: 'pix_enabled',
     value: 'true',
     type: 'BOOLEAN',

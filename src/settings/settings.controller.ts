@@ -1,15 +1,19 @@
 import { Controller, Get, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { IsNotEmpty, IsObject } from 'class-validator';
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 class UpdateSettingDto {
+  @IsNotEmpty()
   value: any;
 }
 
 class UpdateManySettingsDto {
+  @IsObject()
+  @IsNotEmpty()
   settings: Record<string, any>;
 }
 

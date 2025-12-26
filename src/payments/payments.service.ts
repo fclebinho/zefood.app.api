@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, forwardRef, Inject, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
@@ -61,7 +61,7 @@ export interface PixPaymentData {
 }
 
 @Injectable()
-export class PaymentsService {
+export class PaymentsService implements OnModuleInit {
   private readonly logger = new Logger(PaymentsService.name);
   private stripe: Stripe | null = null;
   private mercadopago: MercadoPagoConfig | null = null;
@@ -74,9 +74,11 @@ export class PaymentsService {
     @Inject(forwardRef(() => OrdersGateway))
     private readonly ordersGateway: OrdersGateway,
     private readonly settingsService: SettingsService,
-  ) {
-    // Gateways são inicializados sob demanda usando configurações do banco
-    this.initializeGateways();
+  ) {}
+
+  // Initialize gateways after SettingsService has loaded its cache
+  async onModuleInit() {
+    await this.initializeGateways();
   }
 
   /**

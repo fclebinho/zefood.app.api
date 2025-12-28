@@ -241,9 +241,25 @@ export class MercadoPagoGateway implements PaymentGateway, CardManager {
   }
 
   private async createMockPixPayment(order: OrderWithRelations, amount: number): Promise<PaymentResult> {
-    const pixKey = this.configService.get<string>('PIX_KEY') || 'zefood@pix.com';
-    const merchantName = order.restaurant.name.substring(0, 25);
-    const city = order.restaurant.city?.substring(0, 15) || 'SAO PAULO';
+    // Get PIX settings from database, fallback to env/defaults
+    let pixKey = await this.settingsService.get<string>('pix_key');
+    if (!pixKey) {
+      pixKey = this.configService.get<string>('PIX_KEY') || 'zefood@pix.com';
+    }
+
+    let merchantName = await this.settingsService.get<string>('pix_merchant_name');
+    if (!merchantName) {
+      merchantName = order.restaurant.name;
+    }
+    merchantName = merchantName.substring(0, 25);
+
+    let city = await this.settingsService.get<string>('pix_merchant_city');
+    if (!city) {
+      city = order.restaurant.city || 'SAO PAULO';
+    }
+    city = city.substring(0, 15);
+
+    const expirationMinutes = await this.settingsService.get<number>('pix_expiration_minutes') || 30;
     const txId = order.id.replace(/-/g, '').substring(0, 25);
 
     const pixPayload = this.generatePixPayload({
@@ -266,7 +282,7 @@ export class MercadoPagoGateway implements PaymentGateway, CardManager {
       status: PaymentStatus.PENDING,
       pixQrCode: qrCodeBase64,
       pixCode: pixPayload,
-      pixExpiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+      pixExpiresAt: new Date(Date.now() + expirationMinutes * 60 * 1000),
     };
   }
 

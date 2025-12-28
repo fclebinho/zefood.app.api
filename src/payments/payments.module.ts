@@ -5,10 +5,23 @@ import { PaymentsController } from './payments.controller';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { SettingsModule } from '../settings/settings.module';
 
+// Gateway imports
+import { StripeGateway } from './gateways/stripe/stripe.gateway';
+import { MercadoPagoGateway } from './gateways/mercadopago/mercadopago.gateway';
+import { GatewayRegistry } from './gateways/gateway.registry';
+
 @Module({
   imports: [ConfigModule, forwardRef(() => WebsocketModule), SettingsModule],
   controllers: [PaymentsController],
-  providers: [PaymentsService],
-  exports: [PaymentsService],
+  providers: [
+    // Payment gateways
+    StripeGateway,
+    MercadoPagoGateway,
+    // Gateway registry (manages all gateways)
+    GatewayRegistry,
+    // Main payment service
+    PaymentsService,
+  ],
+  exports: [PaymentsService, GatewayRegistry, StripeGateway, MercadoPagoGateway],
 })
 export class PaymentsModule {}

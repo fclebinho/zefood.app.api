@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PaymentGateway } from '../interfaces';
 import { StripeGateway } from './stripe/stripe.gateway';
 import { MercadoPagoGateway } from './mercadopago/mercadopago.gateway';
+import { PagSeguroGateway } from './pagseguro/pagseguro.gateway';
 import { SettingsService } from '../../settings/settings.service';
 
 /**
@@ -28,6 +29,7 @@ export class GatewayRegistry implements OnModuleInit {
   constructor(
     private readonly stripeGateway: StripeGateway,
     private readonly mercadoPagoGateway: MercadoPagoGateway,
+    private readonly pagSeguroGateway: PagSeguroGateway,
     private readonly settingsService: SettingsService,
   ) {}
 
@@ -52,6 +54,10 @@ export class GatewayRegistry implements OnModuleInit {
     await this.mercadoPagoGateway.initialize();
     this.register(this.mercadoPagoGateway);
 
+    // Register and initialize PagSeguro
+    await this.pagSeguroGateway.initialize();
+    this.register(this.pagSeguroGateway);
+
     const configured = this.getConfigured();
     this.logger.log(`Payment gateways initialized. Configured: ${configured.map((g) => g.name).join(', ') || 'none'}`);
   }
@@ -69,6 +75,9 @@ export class GatewayRegistry implements OnModuleInit {
 
     await this.mercadoPagoGateway.initialize();
     results.mercadopago = this.mercadoPagoGateway.isConfigured();
+
+    await this.pagSeguroGateway.initialize();
+    results.pagseguro = this.pagSeguroGateway.isConfigured();
 
     return results;
   }

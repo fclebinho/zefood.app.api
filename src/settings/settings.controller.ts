@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsNotEmpty, IsObject } from 'class-validator';
 import { SettingsService } from './settings.service';
@@ -75,5 +75,21 @@ export class SettingsController {
     const orderTotal = parseFloat(total) || 0;
     const fee = await this.settingsService.calculateDeliveryFee(distanceKm, orderTotal);
     return { fee };
+  }
+
+  // Admin only - get orphaned settings (legacy settings not in defaults)
+  @Get('orphaned')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getOrphanedSettings() {
+    return this.settingsService.getOrphanedSettings();
+  }
+
+  // Admin only - delete a setting (only non-default settings can be deleted)
+  @Delete(':key')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async deleteSetting(@Param('key') key: string) {
+    return this.settingsService.delete(key);
   }
 }

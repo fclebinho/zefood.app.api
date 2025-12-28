@@ -438,4 +438,45 @@ export class SettingsService implements OnModuleInit {
       label: categoryLabels[s.category] || s.category,
     }));
   }
+
+  // Delete a setting (for removing legacy/unused settings)
+  async delete(key: string) {
+    // Get list of default setting keys
+    const defaultKeys = DEFAULT_SETTINGS.map((s) => s.key);
+
+    // Prevent deletion of default settings
+    if (defaultKeys.includes(key)) {
+      throw new Error(`Cannot delete default setting: ${key}`);
+    }
+
+    const setting = await this.prisma.setting.findUnique({
+      where: { key },
+    });
+
+    if (!setting) {
+      throw new Error(`Setting ${key} not found`);
+    }
+
+    await this.prisma.setting.delete({
+      where: { key },
+    });
+
+    // Remove from cache
+    this.cache.delete(key);
+
+    return { deleted: true, key };
+  }
+
+  // Get orphaned settings (in DB but not in DEFAULT_SETTINGS)
+  async getOrphanedSettings() {
+    const defaultKeys = DEFAULT_SETTINGS.map((s) => s.key);
+    const allSettings = await this.prisma.setting.findMany();
+
+    return allSettings
+      .filter((s) => !defaultKeys.includes(s.key))
+      .map((s) => ({
+        ...s,
+        parsedValue: this.parseValue(s.value, s.type),
+      }));
+  }
 }

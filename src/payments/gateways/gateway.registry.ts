@@ -213,13 +213,11 @@ export class GatewayRegistry implements OnModuleInit {
 
   /**
    * Check if PIX is available
+   * PIX can work with or without a gateway - we can generate QR codes locally
    */
   async hasPixPayment(): Promise<boolean> {
     const pixEnabled = await this.settingsService.get<boolean>('pix_enabled');
-    if (!pixEnabled) return false;
-
-    const enabled = await this.getEnabled();
-    return enabled.some((g) => g.supportsFeature('pix'));
+    return pixEnabled ?? true;
   }
 
   /**
@@ -250,7 +248,8 @@ export class GatewayRegistry implements OnModuleInit {
     }
 
     const hasCardPayment = cardEnabled && enabledGateways.some((g) => g.supportsFeature('credit_card'));
-    const hasPixPayment = pixEnabled && enabledGateways.some((g) => g.supportsFeature('pix'));
+    // PIX is available if enabled in settings - we can generate QR codes locally even without a gateway
+    const hasPixPayment = pixEnabled;
 
     const methods = [
       {

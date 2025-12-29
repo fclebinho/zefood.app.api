@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersGateway } from '../websocket/orders.gateway';
 import { TrackingGateway } from '../tracking/tracking.gateway';
+import { RestaurantFinanceService } from '../restaurant-finance/restaurant-finance.service';
 
 @Injectable()
 export class OrdersService {
@@ -11,6 +12,8 @@ export class OrdersService {
     private prisma: PrismaService,
     private ordersGateway: OrdersGateway,
     private trackingGateway: TrackingGateway,
+    @Inject(forwardRef(() => RestaurantFinanceService))
+    private restaurantFinanceService: RestaurantFinanceService,
   ) {}
 
   async create(customerId: string, createOrderDto: CreateOrderDto) {
@@ -336,6 +339,16 @@ export class OrdersService {
     // If order is READY, notify available drivers
     if (status === OrderStatus.READY && !updatedOrder.driverId) {
       this.ordersGateway.emitNewAvailableDelivery(updatedOrder);
+    }
+
+    // If order is DELIVERED, create restaurant earning record
+    if (status === OrderStatus.DELIVERED) {
+      try {
+        await this.restaurantFinanceService.createEarning(orderId);
+      } catch (error) {
+        // Log error but don't fail the status update
+        console.error(`Failed to create earning for order ${orderId}:`, error);
+      }
     }
 
     return updatedOrder;

@@ -78,6 +78,33 @@ const DEFAULT_SETTINGS = [
     description: 'Percentual da taxa de entrega que vai para o entregador',
     isPublic: false,
   },
+  {
+    key: 'payment_fee_percentage',
+    value: '3.5',
+    type: 'NUMBER',
+    category: 'fees',
+    label: 'Taxa de Pagamento Online (%)',
+    description: 'Percentual cobrado por pagamentos online (cartao, PIX)',
+    isPublic: false,
+  },
+  {
+    key: 'earning_delay_days',
+    value: '3',
+    type: 'NUMBER',
+    category: 'fees',
+    label: 'Prazo de Liberacao (dias)',
+    description: 'Dias ate o ganho ficar disponivel para saque (protecao contra chargeback)',
+    isPublic: false,
+  },
+  {
+    key: 'min_payout_amount',
+    value: '50',
+    type: 'NUMBER',
+    category: 'fees',
+    label: 'Valor Minimo para Saque (R$)',
+    description: 'Valor minimo que o restaurante precisa ter para solicitar saque',
+    isPublic: false,
+  },
 
   // Payment Gateway - Card Providers
   {

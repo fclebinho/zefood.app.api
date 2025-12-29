@@ -168,6 +168,9 @@ model Restaurant {
   orders         Order[]
   favorites      Favorite[]
   coupons        Coupon[]
+  earnings       RestaurantEarning[]
+  payouts        RestaurantPayout[]
+  bankAccount    RestaurantBankAccount?
 
   @@map("restaurants")
 }
@@ -347,15 +350,16 @@ model Order {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  customer      Customer             @relation(fields: [customerId], references: [id])
-  restaurant    Restaurant           @relation(fields: [restaurantId], references: [id])
-  driver        Driver?              @relation(fields: [driverId], references: [id])
-  coupon        Coupon?              @relation(fields: [couponId], references: [id])
-  items         OrderItem[]
-  statusHistory OrderStatusHistory[]
-  rating        Rating?
-  driverEarning DriverEarning?
-  couponUsage   CouponUsage?
+  customer           Customer             @relation(fields: [customerId], references: [id])
+  restaurant         Restaurant           @relation(fields: [restaurantId], references: [id])
+  driver             Driver?              @relation(fields: [driverId], references: [id])
+  coupon             Coupon?              @relation(fields: [couponId], references: [id])
+  items              OrderItem[]
+  statusHistory      OrderStatusHistory[]
+  rating             Rating?
+  driverEarning      DriverEarning?
+  couponUsage        CouponUsage?
+  restaurantEarning  RestaurantEarning?
 
   @@map("orders")
 }
@@ -569,6 +573,110 @@ enum PayoutStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+// ==================== RESTAURANT FINANCIALS ====================
+
+model RestaurantEarning {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  orderId      String   @unique @map("order_id")
+
+  grossAmount     Decimal  @map("gross_amount") @db.Decimal(10, 2)  // Valor bruto do pedido (subtotal)
+  platformFee     Decimal  @map("platform_fee") @db.Decimal(10, 2)  // Comissão da plataforma
+  paymentFee      Decimal  @map("payment_fee") @db.Decimal(10, 2)   // Taxa de pagamento (3.5%)
+  netAmount       Decimal  @map("net_amount") @db.Decimal(10, 2)    // Valor líquido
+
+  feePercentage   Decimal  @map("fee_percentage") @db.Decimal(5, 2) // % da comissão aplicada
+
+  availableAt     DateTime @map("available_at")                      // Quando fica disponível (após delay)
+  status          EarningStatus @default(PENDING)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  order      Order      @relation(fields: [orderId], references: [id])
+
+  @@map("restaurant_earnings")
+}
+
+enum EarningStatus {
+  PENDING     // Aguardando delay de segurança
+  AVAILABLE   // Disponível para saque
+  PAID_OUT    // Já incluído em um repasse
+}
+
+model RestaurantPayout {
+  id           String       @id @default(uuid())
+  restaurantId String       @map("restaurant_id")
+
+  amount       Decimal      @db.Decimal(10, 2)
+  status       PayoutStatus @default(PENDING)
+
+  payoutMethod  PayoutMethod @default(PIX) @map("payout_method")
+  reference     String?                                            // Referência da transferência
+  receiptUrl    String?      @map("receipt_url")                   // Comprovante
+  notes         String?
+
+  periodStart   DateTime     @map("period_start")                  // Início do período
+  periodEnd     DateTime     @map("period_end")                    // Fim do período
+  earningsCount Int          @default(0) @map("earnings_count")    // Qtd de earnings incluídos
+
+  requestedAt   DateTime     @default(now()) @map("requested_at")
+  processedAt   DateTime?    @map("processed_at")
+  processedBy   String?      @map("processed_by")                  // Admin que processou
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@map("restaurant_payouts")
+}
+
+enum PayoutMethod {
+  PIX
+  TED
+  DOC
+}
+
+model RestaurantBankAccount {
+  id           String  @id @default(uuid())
+  restaurantId String  @unique @map("restaurant_id")
+
+  holderName    String  @map("holder_name")                        // Nome do titular
+  holderDocument String @map("holder_document")                    // CPF ou CNPJ
+
+  bankCode      String  @map("bank_code")                          // Código do banco
+  bankName      String  @map("bank_name")
+  accountType   BankAccountType @default(CHECKING) @map("account_type")
+  agency        String
+  agencyDigit   String? @map("agency_digit")
+  accountNumber String  @map("account_number")
+  accountDigit  String  @map("account_digit")
+
+  pixKey        String? @map("pix_key")
+  pixKeyType    PixKeyType? @map("pix_key_type")
+
+  isVerified    Boolean  @default(false) @map("is_verified")
+  verifiedAt    DateTime? @map("verified_at")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_bank_accounts")
+}
+
+enum BankAccountType {
+  CHECKING  // Conta Corrente
+  SAVINGS   // Conta Poupança
+}
+
+enum PixKeyType {
+  CPF
+  CNPJ
+  EMAIL
+  PHONE
+  RANDOM
 }
 
 // ==================== RATINGS ====================

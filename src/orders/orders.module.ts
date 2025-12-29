@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { TrackingModule } from '../tracking/tracking.module';
+import { RestaurantFinanceModule } from '../restaurant-finance/restaurant-finance.module';
 
 @Module({
-  imports: [TrackingModule],
+  imports: [TrackingModule, forwardRef(() => RestaurantFinanceModule)],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

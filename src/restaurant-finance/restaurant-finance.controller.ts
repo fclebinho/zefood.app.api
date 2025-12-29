@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum, IsNumber, Min } from 'class-validator';
@@ -16,7 +17,9 @@ import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RestaurantFinanceService } from './restaurant-finance.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { EarningStatus, PayoutStatus, BankAccountType, PixKeyType } from '@prisma/client';
 
 // ============================================
@@ -134,6 +137,106 @@ class BankAccountDto {
 
 // ============================================
 // Controller
+// ============================================
+
+// ============================================
+// My Finance Controller (for authenticated restaurant users)
+// ============================================
+
+@ApiTags('restaurant-finance')
+@Controller('restaurant-finance')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('RESTAURANT')
+@ApiBearerAuth()
+export class MyFinanceController {
+  constructor(
+    private readonly financeService: RestaurantFinanceService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  private async getRestaurantId(userId: string): Promise<string> {
+    const restaurantUser = await this.prisma.restaurantUser.findFirst({
+      where: { userId },
+      select: { restaurantId: true },
+    });
+    if (!restaurantUser) {
+      throw new NotFoundException('Restaurant not found for this user');
+    }
+    return restaurantUser.restaurantId;
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get earnings summary for my restaurant' })
+  async getSummary(@CurrentUser('sub') userId: string) {
+    const restaurantId = await this.getRestaurantId(userId);
+    return this.financeService.getEarningsSummary(restaurantId);
+  }
+
+  @Get('balance')
+  @ApiOperation({ summary: 'Get available balance for withdrawal' })
+  async getBalance(@CurrentUser('sub') userId: string) {
+    const restaurantId = await this.getRestaurantId(userId);
+    const balance = await this.financeService.getAvailableBalance(restaurantId);
+    return { availableBalance: balance };
+  }
+
+  @Get('earnings')
+  @ApiOperation({ summary: 'Get earnings history' })
+  @ApiQuery({ name: 'status', enum: EarningStatus, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  async getEarnings(
+    @CurrentUser('sub') userId: string,
+    @Query() query: EarningsQueryDto,
+  ) {
+    const restaurantId = await this.getRestaurantId(userId);
+    return this.financeService.getEarnings(restaurantId, query);
+  }
+
+  @Get('payouts')
+  @ApiOperation({ summary: 'Get payouts history' })
+  @ApiQuery({ name: 'status', enum: PayoutStatus, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  async getPayouts(
+    @CurrentUser('sub') userId: string,
+    @Query() query: PayoutsQueryDto,
+  ) {
+    const restaurantId = await this.getRestaurantId(userId);
+    return this.financeService.getPayouts(restaurantId, query);
+  }
+
+  @Post('request-payout')
+  @ApiOperation({ summary: 'Request a payout' })
+  async requestPayout(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: RequestPayoutDto,
+  ) {
+    const restaurantId = await this.getRestaurantId(userId);
+    return this.financeService.requestPayout(restaurantId, dto);
+  }
+
+  @Get('bank-account')
+  @ApiOperation({ summary: 'Get bank account details' })
+  async getBankAccount(@CurrentUser('sub') userId: string) {
+    const restaurantId = await this.getRestaurantId(userId);
+    const account = await this.financeService.getBankAccount(restaurantId);
+    return account || null;
+  }
+
+  @Post('bank-account')
+  @ApiOperation({ summary: 'Create or update bank account' })
+  async upsertBankAccount(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: BankAccountDto,
+  ) {
+    const restaurantId = await this.getRestaurantId(userId);
+    return this.financeService.upsertBankAccount(restaurantId, dto);
+  }
+}
+
+// ============================================
+// Restaurant Finance Controller (with restaurantId param)
 // ============================================
 
 @ApiTags('restaurant-finance')

@@ -1,3 +1,3 @@
 export * from './restaurant-finance.module';
 export * from './restaurant-finance.service';
-export * from './restaurant-finance.controller';
+export { MyFinanceController, RestaurantFinanceController, AdminFinanceController } from './restaurant-finance.controller';

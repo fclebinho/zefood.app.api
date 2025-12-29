@@ -15,6 +15,7 @@ import { TrackingModule } from './tracking/tracking.module';
 import { SettingsModule } from './settings/settings.module';
 import { HealthModule } from './health/health.module';
 import { RestaurantFinanceModule } from './restaurant-finance/restaurant-finance.module';
+import { DriverFinanceModule } from './driver-finance/driver-finance.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { RestaurantFinanceModule } from './restaurant-finance/restaurant-finance
     TrackingModule,
     SettingsModule,
     RestaurantFinanceModule,
+    DriverFinanceModule,
   ],
 })
 export class AppModule {}

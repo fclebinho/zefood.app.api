@@ -5,6 +5,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersGateway } from '../websocket/orders.gateway';
 import { TrackingGateway } from '../tracking/tracking.gateway';
 import { RestaurantFinanceService } from '../restaurant-finance/restaurant-finance.service';
+import { DriverFinanceService } from '../driver-finance/driver-finance.service';
 
 @Injectable()
 export class OrdersService {
@@ -14,6 +15,8 @@ export class OrdersService {
     private trackingGateway: TrackingGateway,
     @Inject(forwardRef(() => RestaurantFinanceService))
     private restaurantFinanceService: RestaurantFinanceService,
+    @Inject(forwardRef(() => DriverFinanceService))
+    private driverFinanceService: DriverFinanceService,
   ) {}
 
   async create(customerId: string, createOrderDto: CreateOrderDto) {
@@ -341,13 +344,20 @@ export class OrdersService {
       this.ordersGateway.emitNewAvailableDelivery(updatedOrder);
     }
 
-    // If order is DELIVERED, create restaurant earning record
+    // If order is DELIVERED, create earnings for restaurant and driver
     if (status === OrderStatus.DELIVERED) {
+      // Create restaurant earning (from subtotal)
       try {
         await this.restaurantFinanceService.createEarning(orderId);
       } catch (error) {
-        // Log error but don't fail the status update
-        console.error(`Failed to create earning for order ${orderId}:`, error);
+        console.error(`Failed to create restaurant earning for order ${orderId}:`, error);
+      }
+
+      // Create driver earning (from delivery fee)
+      try {
+        await this.driverFinanceService.createDeliveryEarning(orderId);
+      } catch (error) {
+        console.error(`Failed to create driver earning for order ${orderId}:`, error);
       }
     }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -129,5 +129,13 @@ export class AdminDriverFinanceController {
   @Get('top-drivers')
   async getTopDrivers(@Query('limit') limit?: string) {
     return this.driverFinanceService.getTopDrivers(limit ? parseInt(limit) : 10);
+  }
+
+  /**
+   * Backfill driver earnings for historical delivered orders
+   */
+  @Post('backfill')
+  async backfillEarnings() {
+    return this.driverFinanceService.backfillEarnings();
   }
 }

@@ -338,4 +338,66 @@ export class DriverFinanceService {
       deliveryCount: item._count,
     }));
   }
+
+  /**
+   * Backfill earnings for delivered orders that don't have driver earnings yet
+   * This is used to migrate historical data
+   */
+  async backfillEarnings(): Promise<{ processed: number; created: number; skipped: number }> {
+    // Get driver commission percentage from settings (default 80% of delivery fee)
+    const driverCommissionPercentage = await this.settingsService.get<number>('driver_commission_percentage') ?? 80;
+
+    // Find all delivered orders with a driver that don't have a driver earning
+    const ordersWithoutEarnings = await this.prisma.order.findMany({
+      where: {
+        status: 'DELIVERED',
+        driverId: { not: null },
+        driverEarning: null,
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        driverId: true,
+        deliveryFee: true,
+      },
+    });
+
+    let created = 0;
+    let skipped = 0;
+
+    for (const order of ordersWithoutEarnings) {
+      if (!order.driverId) {
+        skipped++;
+        continue;
+      }
+
+      const deliveryFee = Number(order.deliveryFee);
+      const driverEarning = deliveryFee * (driverCommissionPercentage / 100);
+
+      try {
+        await this.prisma.driverEarning.create({
+          data: {
+            driverId: order.driverId,
+            orderId: order.id,
+            amount: driverEarning,
+            type: 'DELIVERY',
+            description: `Entrega do pedido #${order.orderNumber}`,
+          },
+        });
+        created++;
+        this.logger.log(`Created driver earning for historical order ${order.id}`);
+      } catch (error) {
+        // Skip if already exists (race condition)
+        skipped++;
+      }
+    }
+
+    this.logger.log(`Backfill complete: processed=${ordersWithoutEarnings.length}, created=${created}, skipped=${skipped}`);
+
+    return {
+      processed: ordersWithoutEarnings.length,
+      created,
+      skipped,
+    };
+  }
 }

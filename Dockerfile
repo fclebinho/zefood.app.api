@@ -39,7 +39,7 @@ EXPOSE 3001
 # Create startup script that runs migrations before starting
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'npx prisma db push --skip-generate --accept-data-loss' >> /app/start.sh && \
-    echo 'node dist/main.js' >> /app/start.sh && \
+    echo 'node dist/src/main.js' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Start the application with migrations

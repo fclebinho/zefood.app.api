@@ -190,8 +190,22 @@ export class RestaurantFinanceService {
       this.prisma.restaurantEarning.count({ where }),
     ]);
 
+    // Convert Decimal fields to numbers for JSON serialization
+    const serializedEarnings = earnings.map((earning) => ({
+      ...earning,
+      grossAmount: Number(earning.grossAmount),
+      platformFee: Number(earning.platformFee),
+      paymentFee: Number(earning.paymentFee),
+      netAmount: Number(earning.netAmount),
+      feePercentage: Number(earning.feePercentage),
+      order: earning.order ? {
+        ...earning.order,
+        total: Number(earning.order.total),
+      } : null,
+    }));
+
     return {
-      data: earnings,
+      data: serializedEarnings,
       pagination: {
         total,
         page,
@@ -372,8 +386,14 @@ export class RestaurantFinanceService {
       this.prisma.restaurantPayout.count({ where }),
     ]);
 
+    // Convert Decimal fields to numbers for JSON serialization
+    const serializedPayouts = payouts.map((payout) => ({
+      ...payout,
+      amount: Number(payout.amount),
+    }));
+
     return {
-      data: payouts,
+      data: serializedPayouts,
       pagination: {
         total,
         page,

@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 interface AuthenticatedRequest {
   user: {
-    id: string;
+    sub: string;
     email: string;
     role: string;
   };
@@ -28,7 +28,7 @@ export class DriverFinanceController {
   @Roles('DRIVER')
   async getSummary(@Request() req: AuthenticatedRequest) {
     const driver = await this.prisma.driver.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.user.sub },
     });
 
     if (!driver) {
@@ -52,7 +52,7 @@ export class DriverFinanceController {
     @Query('limit') limit?: string,
   ) {
     const driver = await this.prisma.driver.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.user.sub },
     });
 
     if (!driver) {
@@ -75,7 +75,7 @@ export class DriverFinanceController {
   @Roles('DRIVER')
   async getTodayEarnings(@Request() req: AuthenticatedRequest) {
     const driver = await this.prisma.driver.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.user.sub },
     });
 
     if (!driver) {
@@ -95,7 +95,7 @@ export class DriverFinanceController {
     @Query('date') dateStr?: string,
   ) {
     const driver = await this.prisma.driver.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.user.sub },
     });
 
     if (!driver) {
